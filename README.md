@@ -7,10 +7,15 @@ features:
 2. raw seismic data or filter data (format: SAC files (*.sac))
 3. return comprehensive seismic data information (event_info.csv).
 
+|**analysis for a single signal**    |
+|:--------------------------------------------------------------:|
+|<img src="https://github.com/cuitianyu20/PhaseViewer/blob/main/src/demo.png" alt="fcwtaudio" width="400"/>|
 ***
+
 ## dependencies
 obspy, signal, numpy, pandas, matplotlib, tkinter
 ***
+
 ## 
 #### parameters
 1. data folder with *sac files;
