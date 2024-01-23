@@ -11,7 +11,6 @@ class Phaseviewer:
     # initialize
     def __init__(self, datafolder, filter=False, filter_freq=[1, 3]):
         master = tk.Tk()
-        master.geometry("900x700")
         self.event_info = []
         self.master = master
         self.master.title("Seismic Phase Viewer")
