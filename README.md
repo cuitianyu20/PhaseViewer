@@ -1,5 +1,6 @@
 # PhaseViewer
 ![Author](https://img.shields.io/badge/Author-TianyuCui-blue.svg)
+
 Seismic Phase Viewer with GUI Interface (classify and pick-up phases)
 
 
