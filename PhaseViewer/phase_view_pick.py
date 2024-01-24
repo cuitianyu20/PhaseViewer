@@ -9,7 +9,7 @@ GUI for seismic phase view and pick-up
 """
 class Phaseviewer:
     # initialize
-    def __init__(self, datafolder, filter=False, filter_freq=[1, 3]):
+    def __init__(self, datafolder, filter=False, filter_freq=[1, 3], output_file='event_info.csv'):
         master = tk.Tk()
         self.event_info = []
         self.master = master
@@ -23,6 +23,8 @@ class Phaseviewer:
         self.filter = filter
         self.filter_freq = filter_freq
         self.index = 0
+        # output data name
+        self.output_file = output_file
         # phase
         self.PcP_classify = 0
         self.PKiKP_classify = 0
@@ -217,13 +219,11 @@ class Phaseviewer:
         self.event_info = pd.DataFrame(self.event_info, columns=['event_wave', 'PcP_classify', 'PKiKP_classify', 'PcP_predic_pick', 'PKiKP_predic_pick', 
                                                                  'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
                                                                  'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave'])
-        self.event_info.to_csv('event_info.csv', index=False)
+        self.event_info.to_csv(self.output_file, index=False)
         print('Done!')
         print('Close the window...')
         self.master.quit()     # abort mainloop
         self.master.destroy()  
-
-
 
 
 if __name__ == '__main__':
