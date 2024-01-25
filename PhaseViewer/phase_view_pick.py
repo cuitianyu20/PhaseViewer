@@ -68,30 +68,37 @@ class Phaseviewer:
                     print("Alert: event info file is not match with the data file!!!")
                     self.event_info = []
             file_path = self.data_files[self.index]
-            self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq)
-            # predicted phase arrival
-            self.PcP_predic_pick = self.travel_times['PcP']
-            self.PKiKP_predic_pick = self.travel_times['PKiKP']
-            # phase wave cut
-            self.PcP_wave = self.phase_wave['view_cut']['PcP']
-            self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
-            if 'P' not in self.travel_times.keys():
-                print('%s : no P arrival.' % self.data_files[self.index])
-                # phase cross correlation
-                self.PcP_cc_wave = 0 
-                self.PKiKP_cc_wave = 0
-                self.PcP_cc_max = 0
-                self.PKiKP_cc_max = 0
-                self.PcP_cc_lag = 0
-                self.PKiKP_cc_lag = 0
-            else:
-                # phase cross correlation
-                self.PcP_cc_wave = self.cross_corr['PcP']['corr_wave']
-                self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
-                self.PcP_cc_max = self.cross_corr['PcP']['corr_max']
-                self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
-                self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
-                self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
+            try:
+                self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq)
+                self.wave_data_fig = True
+                # predicted phase arrival
+                self.PcP_predic_pick = self.travel_times['PcP']
+                self.PKiKP_predic_pick = self.travel_times['PKiKP']
+                # phase wave cut
+                self.PcP_wave = self.phase_wave['view_cut']['PcP']
+                self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
+                if 'P' not in self.travel_times.keys():
+                    print('%s : no P arrival.' % self.data_files[self.index])
+                    # phase cross correlation
+                    self.PcP_cc_wave = 0 
+                    self.PKiKP_cc_wave = 0
+                    self.PcP_cc_max = 0
+                    self.PKiKP_cc_max = 0
+                    self.PcP_cc_lag = 0
+                    self.PKiKP_cc_lag = 0
+                else:
+                    # phase cross correlation
+                    self.PcP_cc_wave = self.cross_corr['PcP']['corr_wave']
+                    self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
+                    self.PcP_cc_max = self.cross_corr['PcP']['corr_max']
+                    self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
+                    self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
+                    self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
+            except:
+                self.wave_data_fig = False
+                self.fig = plt.figure(figsize=(8, 6))
+                print('Error: load error (%s)' % self.data_files[self.index])
+
             self.embed_fig_in_tkinter(self.fig)
             self.canvas.draw()
         else:
@@ -190,10 +197,11 @@ class Phaseviewer:
     # plot seismic phases for the next data self.file
     def plot_next_data(self):
         # update event info for last event
-        self.update_event_info(self.data_files[self.index])
+        self.update_event_info()
         self.index += 1
         # load event info if ever see this event
         self.load_event_info()
+        self.close_window = False
         # clear the previous fig object
         if hasattr(self, 'canvas_container'):
             plt.close()
@@ -207,6 +215,7 @@ class Phaseviewer:
             self.index -= 1
             # load event info if ever see this event
             self.load_event_info()
+            self.close_window = False
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
                 plt.close()
@@ -232,35 +241,45 @@ class Phaseviewer:
             self.PKiKP_pick = 0
 
     # update event info if the event is already in the event info list
-    def update_event_info(self, event_wave):
-        data_info = [event_wave, self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 
-                        self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, 
-                        self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, 
-                        self.PcP_cc_wave, self.PKiKP_cc_wave]
+    def update_event_info(self):
+        data_info = self.single_wave_data()
         duplicate_flag = 0
         for i, value in enumerate(self.event_info):
-            if value[0] == event_wave:
+            if value[0] == self.data_files[self.index]:
                 # update event info
                 self.event_info[i] = data_info
                 duplicate_flag = 1
         if duplicate_flag == 0:
-            self.event_info.append(data_info)
-    
-    # quit button
-    def _quit(self):
+            self.event_info.append(data_info)   
+
+    # get single wave data
+    def single_wave_data(self):
+        if self.wave_data_fig:
+            data_info = [self.data_files[self.index], self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 
+                            self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, 
+                            self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, 
+                            self.PcP_cc_wave, self.PKiKP_cc_wave]
+        else:
+            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            # data_info = [self.data_files[self.index], 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']
+        return data_info
+
+    # save event info to csv file
+    def save_info(self):
         # save event info for last event
         if self.index < len(self.data_files):
-            self.event_info.append([self.data_files[self.index], self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 
-                                self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, 
-                                self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, 
-                                self.PcP_cc_wave, self.PKiKP_cc_wave])
+            self.update_event_info()
         # save event info to csv file
         print('Save event info to csv file (event_info.csv)...')
-        self.event_info = pd.DataFrame(self.event_info, columns=['event_wave', 'PcP_classify', 'PKiKP_classify', 'PcP_predic_pick', 'PKiKP_predic_pick', 
-                                                                 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
-                                                                 'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave'])
-        self.event_info.to_csv(self.output_file, index=False)
-        print('Done!')
+        event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'PcP_classify', 'PKiKP_classify', 'PcP_predic_pick', 'PKiKP_predic_pick', 
+                                                                'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
+                                                                'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave'])
+        event_data.to_csv(self.output_file, index=False)
+        print('Saving...... Done!')
+
+    # quit button
+    def _quit(self):
+        self.save_info()
         print('Close the window...')
         self.master.quit()     # abort mainloop
         self.master.destroy()  
