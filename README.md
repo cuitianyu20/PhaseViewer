@@ -26,6 +26,7 @@ obspy, signal, numpy, pandas, matplotlib, tkinter
     1. data folder with *sac files;
     2. filter: if True, apply bandpass filter (4-order), default: False;
     3. filter_freq: min_frequency and max_frequency, default: [1, 3].
+    4. output file name : *csv file
 
 ```
 ### 2. para in final event_info.csv
