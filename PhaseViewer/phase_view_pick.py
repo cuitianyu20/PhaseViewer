@@ -22,7 +22,10 @@ class Phaseviewer:
         # filter data
         self.filter = filter
         self.filter_freq = filter_freq
+        # data index
         self.index = 0
+        # press last button index
+        self.last_index = 0
         # output data name
         self.output_file = output_file
         # phase
@@ -160,37 +163,46 @@ class Phaseviewer:
     
     # plot seismic phases for the next data self.file
     def plot_next_data(self):
+        # update event info for last event
         self.update_event_info(self.data_files[self.index])
+        self.index += 1
+        # load event info if ever see this event
+        self.load_event_info()
         # clear the previous fig object
         if hasattr(self, 'canvas_container'):
             self.canvas_container.destroy()
-        # resert phase classification and pick-up
-        self.PcP_classify = 0
-        self.PKiKP_classify = 0
-        self.PcP_pick = 0
-        self.PKiKP_pick = 0
         # plot the next data file
-        self.index += 1
         self.plot_figure()
     
     # plot seismic phases for the previous data self.file
     def plot_last_data(self):
-        if self.index and self.index < len(self.data_files):
-            # self.update_event_info(self.data_files[self.index])
+        if self.index > 0:
+            self.index -= 1
+            # load event info if ever see this event
+            self.load_event_info()
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
                 self.canvas_container.destroy()
-            # retrive the previous phase classification and pick-up
-            self.PcP_classify = self.event_info[-1][1]
-            self.PKiKP_classify = self.event_info[-1][2]
-            self.PcP_pick = self.event_info[-1][5] - self.event_info[-1][3]
-            self.PKiKP_pick = self.event_info[-1][6] - self.event_info[-1][4]
             # plot the previous data file
-            self.index -= 1
             self.plot_figure()
         else:
             print('Alert: this is the first event data!!!')
     
+    # load event info if ever see this event
+    def load_event_info(self):
+        if self.index < len(self.event_info):
+            # retrive the previous phase classification and pick-up
+            self.PcP_classify = self.event_info[self.index][1]
+            self.PKiKP_classify = self.event_info[self.index][2]
+            self.PcP_pick = self.event_info[self.index][5] - self.event_info[self.index][3]
+            self.PKiKP_pick = self.event_info[self.index][6] - self.event_info[self.index][4]
+        else:
+            # resert phase classification and pick-up
+            self.PcP_classify = 0
+            self.PKiKP_classify = 0
+            self.PcP_pick = 0
+            self.PKiKP_pick = 0
+
     # update event info if the event is already in the event info list
     def update_event_info(self, event_wave):
         data_info = [event_wave, self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 

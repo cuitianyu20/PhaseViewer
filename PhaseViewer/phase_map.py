@@ -121,7 +121,8 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         ax.plot(wave_cut_times['view_cut'][int((sta_win[1]-view_win[0])*samplate):], phase_wave_info['view_cut'][phase][int((sta_win[1]-view_win[0])*samplate):], color='k')
         if np.abs(lta_win[0]) < np.abs(view_win[0]):
             ax.plot(wave_cut_times['view_cut'][:int((lta_win[0]-view_win[0])*samplate)], phase_wave_info['view_cut'][phase][:int((lta_win[0]-view_win[0])*samplate)], color='k')
-        ax.vlines(cross_corr[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_color[i], linestyles='dashed')
+        if P_wave_yes == 1:
+            ax.vlines(cross_corr[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_color[i], linestyles='dashed')
         ax.text(view_win[0],ax.get_ylim()[0]*text_loc[0],'MEAN:%.2f'%mean_info[phase], color=phase_color[i])
         ax.text(view_win[0],ax.get_ylim()[1]*text_loc[1],'SNR:%.2f'%SNR_info[phase], color=phase_color[i])
         ax.fill_between([sta_win[0],sta_win[1]],ax.get_ylim()[0],ax.get_ylim()[1],facecolor = fill_color[i], alpha = 0.3)
