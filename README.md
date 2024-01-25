@@ -23,11 +23,13 @@ obspy, signal, numpy, pandas, matplotlib, tkinter
 ### 1. para in code
 ```python
 
-    1. data folder with *sac files;
-    2. filter: if True, apply bandpass filter (4-order), default: False;
-    3. filter_freq: min_frequency and max_frequency, default: [1, 3].
-    4. event_info: load ever processed event info file (format:csv) for processing same data
-    5. output file name : *csv file
+    1. data folder: containing *sac files;
+    2. folder order: 1 or 2 (first-order or second-order folder);
+    3. sort_by_distance: True or False (sort data by epicentral distance);
+    4. filter: if True, apply bandpass filter (4-order), default: False;
+    5. filter_freq: min_frequency and max_frequency, default: [1, 3].
+    6. event_info: load ever processed event info file (format:csv) for processing same data
+    7. output file name : *csv file
 
 ```
 ### 2. para in final event_info.csv
