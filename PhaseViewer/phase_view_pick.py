@@ -1,4 +1,5 @@
 import glob 
+import obspy
 import pandas as pd
 import tkinter as tk
 import matplotlib.pyplot as plt
@@ -10,7 +11,7 @@ GUI for seismic phase view and pick-up
 """
 class Phaseviewer:
     # initialize
-    def __init__(self, datafolder, filter=False, filter_freq=[1, 3], event_info=None, output_file='event_info.csv'):
+    def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], event_info=None, sort_by_dis=True, output_file='event_info.csv'):
         print("==========================================================================")
         print("===================  Welcome to Seismic Phase Viewer!  ===================")
         print("===================  Usage:                            ===================")
@@ -30,7 +31,22 @@ class Phaseviewer:
         self.master.title("Seismic Phase Viewer")
         # self.file folder path
         self.data_folder_path = datafolder
-        self.data_files = glob.glob(self.data_folder_path + "/*.sac")
+        if folder_order == 1:
+            self.data_files = glob.glob(self.data_folder_path + "/*.sac")
+            if sort_by_dis:
+                dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in self.data_files ]
+                self.data_files = [x for _,x in sorted(zip(dis_list,self.data_files))]
+        elif folder_order == 2:
+            event_list = list(set([data.split('/')[-2] for data in glob.glob(self.data_folder_path + "/*/*.sac")]))
+            self.data_files = []
+            for event in event_list:
+                event_files = sorted(glob.glob(self.data_folder_path + "/" + event + "/*.sac"))
+                if sort_by_dis:
+                    dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in event_files ]
+                    event_files = [x for _,x in sorted(zip(dis_list,event_files))]
+                self.data_files += event_files
+        else:
+            raise ValueError('Folder order error!!!')
         if len(self.data_files) == 0:
             raise ValueError('No sac file in the folder!!!')
         # filter data
@@ -261,7 +277,6 @@ class Phaseviewer:
                             self.PcP_cc_wave, self.PKiKP_cc_wave]
         else:
             data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            # data_info = [self.data_files[self.index], 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']
         return data_info
 
     # save event info to csv file

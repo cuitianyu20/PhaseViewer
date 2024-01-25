@@ -136,8 +136,8 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         if P_wave_yes == 1:
             ax.plot(cross_corr[phase]['corr_lag'], cross_corr[phase]['corr_wave'], color='k')
             ax.vlines(cross_corr[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_color[i], linestyles='dashed')
-            ax.text(np.min(cross_corr[phase]['corr_lag']), ax.get_ylim()[0]*text_loc[0], 'lag:%.2f s'%cross_corr[phase]['lag_max'], color=phase_color[i])
-            ax.text(np.min(cross_corr[phase]['corr_lag']), ax.get_ylim()[1]*text_loc[1], 'corr:%.2f'%cross_corr[phase]['corr_max'], color=phase_color[i])
+            ax.text(np.min(cross_corr[phase]['corr_lag']), -0.7, 'lag:%.2f s'%cross_corr[phase]['lag_max'], color=phase_color[i])
+            ax.text(np.min(cross_corr[phase]['corr_lag']), 0.6, 'corr:%.2f'%cross_corr[phase]['corr_max'], color=phase_color[i])
             ax.set_xlim(-1*math.ceil(np.abs(np.min(cross_corr[phase]['corr_lag']))/10)*10, math.ceil(np.max(cross_corr[phase]['corr_lag'])/10)*10)
             ax.set_ylim(-1, 1)
         ax.set_xlabel('Lag time (s)')
