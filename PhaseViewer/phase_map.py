@@ -139,6 +139,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
             ax.text(np.min(cross_corr[phase]['corr_lag']), ax.get_ylim()[0]*text_loc[0], 'lag:%.2f s'%cross_corr[phase]['lag_max'], color=phase_color[i])
             ax.text(np.min(cross_corr[phase]['corr_lag']), ax.get_ylim()[1]*text_loc[1], 'corr:%.2f'%cross_corr[phase]['corr_max'], color=phase_color[i])
             ax.set_xlim(-1*math.ceil(np.abs(np.min(cross_corr[phase]['corr_lag']))/10)*10, math.ceil(np.max(cross_corr[phase]['corr_lag'])/10)*10)
+            ax.set_ylim(-1, 1)
         ax.set_xlabel('Lag time (s)')
         ax.set_ylabel('Correlation')
         ax.set_title('Cross-correlation (%s-P)'%phase)
