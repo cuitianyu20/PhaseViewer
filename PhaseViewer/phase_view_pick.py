@@ -10,9 +10,22 @@ GUI for seismic phase view and pick-up
 """
 class Phaseviewer:
     # initialize
-    def __init__(self, datafolder, filter=False, filter_freq=[1, 3], output_file='event_info.csv'):
+    def __init__(self, datafolder, filter=False, filter_freq=[1, 3], event_info=None, output_file='event_info.csv'):
+        print("==========================================================================")
+        print("===================  Welcome to Seismic Phase Viewer!  ===================")
+        print("===================  Usage:                            ===================")
+        print("===================  1. Left signle click: classify phases ===============")
+        print("===================  2. Left double click: pick-up phases  ===============")
+        print("===================  3. Leave and save result: click 'Quit' button =======")
+        print("==========================================================================")
         master = tk.Tk()
-        self.event_info = []
+        if event_info is not None:
+            # load event info
+            self.event_info_file = 1
+            self.event_info = pd.read_csv(event_info).values.tolist()
+        else:
+            self.event_info_file = 0
+            self.event_info = []
         self.master = master
         self.master.title("Seismic Phase Viewer")
         # self.file folder path
@@ -42,6 +55,18 @@ class Phaseviewer:
     # plot seismic phases for the next data self.file
     def plot_figure(self):
         if self.index < len(self.data_files):
+            if self.index == 0 and self.event_info_file == 1:
+                if self.data_files[self.index] == self.event_info[0][0]:
+                    print('Success: load event info!!!')
+                    # load event info
+                    self.PcP_classify = self.event_info[0][1]
+                    self.PKiKP_classify = self.event_info[0][2]
+                    self.PcP_pick = self.event_info[0][5] - self.event_info[0][3]
+                    self.PKiKP_pick = self.event_info[0][6] - self.event_info[0][4]
+                else:
+                    print('Error: load event info error!!!')
+                    print("Alert: event info file is not match with the data file!!!")
+                    self.event_info = []
             file_path = self.data_files[self.index]
             self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq)
             # predicted phase arrival
