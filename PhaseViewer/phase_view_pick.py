@@ -1,6 +1,7 @@
 import glob 
 import pandas as pd
 import tkinter as tk
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 from .phase_map import phase_fig
 
@@ -170,6 +171,7 @@ class Phaseviewer:
         self.load_event_info()
         # clear the previous fig object
         if hasattr(self, 'canvas_container'):
+            plt.close()
             self.canvas_container.destroy()
         # plot the next data file
         self.plot_figure()
@@ -182,6 +184,7 @@ class Phaseviewer:
             self.load_event_info()
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
+                plt.close()
                 self.canvas_container.destroy()
             # plot the previous data file
             self.plot_figure()
