@@ -50,6 +50,7 @@ obspy, signal, numpy, pandas, matplotlib, tkinter
     PKiKP_wave: PKiKP phase waveform cut data
     PcP_cc_wave: PcP phase cross-correlation waveform cut data
     PKiKP_cc_wave: PKiKP phase cross-correlation waveform cut data
+    drop_data_flag: drop data flag (0: no drop; 1: drop)
 
 ```
 
