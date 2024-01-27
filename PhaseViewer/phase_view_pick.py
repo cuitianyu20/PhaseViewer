@@ -37,7 +37,7 @@ class Phaseviewer:
                 dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in self.data_files ]
                 self.data_files = [x for _,x in sorted(zip(dis_list,self.data_files))]
         elif folder_order == 2:
-            event_list = list(set([data.split('/')[-2] for data in glob.glob(self.data_folder_path + "/*/*.sac")]))
+            event_list = sorted(list(set([data.split('/')[-2] for data in glob.glob(self.data_folder_path + "/*/*.sac")])))
             self.data_files = []
             for event in event_list:
                 event_files = sorted(glob.glob(self.data_folder_path + "/" + event + "/*.sac"))
@@ -63,6 +63,8 @@ class Phaseviewer:
         self.PKiKP_classify = 0
         self.PcP_pick = 0
         self.PKiKP_pick = 0
+        # drop data
+        self.drop_data_flag = 0
         # initial figure
         self.plot_figure()
         # mainloop
@@ -160,9 +162,17 @@ class Phaseviewer:
         # # PKiKP value
         self.PKiKP_pick_value = tk.Label(self.canvas_container, text='s %.3f='%self.PKiKP_pick)
         self.PKiKP_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        # drop button
+        drop_button = tk.Button(self.canvas_container, text="Drop", command=self.drop_data)
+        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        # drop value
+        self.drop_data_value = tk.Label(self.canvas_container, text='yes' if self.drop_data_flag==1 else 'no')
+        self.drop_data_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
         # quit button
         quit_button = tk.Button(self.canvas_container, text="Quit", command=self._quit)
-        quit_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+
+
     
     # classify seismic phases
     def phase_classify(self, phase_num):
@@ -249,12 +259,14 @@ class Phaseviewer:
             self.PKiKP_classify = self.event_info[self.index][2]
             self.PcP_pick = self.event_info[self.index][5] - self.event_info[self.index][3]
             self.PKiKP_pick = self.event_info[self.index][6] - self.event_info[self.index][4]
+            self.drop_data_flag = self.event_info[self.index][-1]
         else:
             # resert phase classification and pick-up
             self.PcP_classify = 0
             self.PKiKP_classify = 0
             self.PcP_pick = 0
             self.PKiKP_pick = 0
+            self.drop_data_flag = 0
 
     # update event info if the event is already in the event info list
     def update_event_info(self):
@@ -274,9 +286,9 @@ class Phaseviewer:
             data_info = [self.data_files[self.index], self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 
                             self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, 
                             self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, 
-                            self.PcP_cc_wave, self.PKiKP_cc_wave]
+                            self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
         else:
-            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         return data_info
 
     # save event info to csv file
@@ -288,9 +300,18 @@ class Phaseviewer:
         print('Save event info to csv file (event_info.csv)...')
         event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'PcP_classify', 'PKiKP_classify', 'PcP_predic_pick', 'PKiKP_predic_pick', 
                                                                 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
-                                                                'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave'])
+                                                                'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave', 'drop_data_flag'])
         event_data.to_csv(self.output_file, index=False)
         print('Saving...... Done!')
+
+    # drop the current data self.file
+    def drop_data(self):
+        if self.drop_data_flag == 0:
+            self.drop_data_flag = 1
+            self.drop_data_value.config(text='yes')
+        else:
+            self.drop_data_flag = 0
+            self.drop_data_value.config(text='no')
 
     # quit button
     def _quit(self):
