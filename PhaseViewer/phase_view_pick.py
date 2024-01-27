@@ -143,34 +143,34 @@ class Phaseviewer:
         last_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
         # phase classification button
         PcP_class_button = tk.Button(self.canvas_container, text=" PcP ", command=lambda: self.phase_classify(1))
-        PcP_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        PcP_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         self.PcP_classify_value = tk.Label(self.canvas_container, text='yes' if self.PcP_classify==1 else 'no')
-        self.PcP_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        self.PcP_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         PKiKP_class_button = tk.Button(self.canvas_container, text="PKiKP", command=lambda: self.phase_classify(2))
-        PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         self.PKiKP_classify_value = tk.Label(self.canvas_container, text='yes' if self.PKiKP_classify==1 else 'no')
-        self.PKiKP_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        self.PKiKP_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PcP button
         PcP_pick_button = tk.Button(self.canvas_container, text=" PcP Pick ", command=lambda: self.phase_pick(1))
-        PcP_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        PcP_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # PcP value
         self.PcP_pick_value = tk.Label(self.canvas_container, text='=%.3f s'%self.PcP_pick)
-        self.PcP_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        self.PcP_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PKiKP button
         PKiKP_class_button = tk.Button(self.canvas_container, text="PKiKP Pick", command=lambda: self.phase_pick(2))
-        PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
+        PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # # PKiKP value
         self.PKiKP_pick_value = tk.Label(self.canvas_container, text='s %.3f='%self.PKiKP_pick)
-        self.PKiKP_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
-        # drop button
-        drop_button = tk.Button(self.canvas_container, text="Drop", command=self.drop_data)
-        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        self.PKiKP_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # drop value
         self.drop_data_value = tk.Label(self.canvas_container, text='yes' if self.drop_data_flag==1 else 'no')
-        self.drop_data_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        self.drop_data_value.pack(side=tk.TOP, fill=tk.BOTH, anchor=tk.CENTER)
+        # drop button
+        drop_button = tk.Button(self.canvas_container, text="Drop", command=self.drop_data)
+        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
         # quit button
         quit_button = tk.Button(self.canvas_container, text="Quit", command=self._quit)
-        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
 
 
     
