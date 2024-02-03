@@ -20,7 +20,7 @@ event_info = None   # if load selected event information, set event_info = "even
 # event_info = "event_info.csv"
 
 ### output file ###
-output_file = "event_info_out.csv" # output file name
+output_file = "event_info.csv" # output file name
 
 # phase viewer: return event_info,csv file (event informatin)
 PhaseViewer.Phaseviewer(event_folder, folder_order=folder_order, filter=filter_data, filter_freq=filter_freq, event_info=event_info, sort_by_dis=sort_by_distance, output_file=output_file)

@@ -59,8 +59,10 @@ class Phaseviewer:
         # output data name
         self.output_file = output_file
         # phase
+        self.P_classify = 0
         self.PcP_classify = 0
         self.PKiKP_classify = 0
+        self.P_pick = 0
         self.PcP_pick = 0
         self.PKiKP_pick = 0
         # drop data
@@ -77,10 +79,7 @@ class Phaseviewer:
                 if self.data_files[self.index] == self.event_info[0][0]:
                     print('Success: load event info!!!')
                     # load event info
-                    self.PcP_classify = self.event_info[0][1]
-                    self.PKiKP_classify = self.event_info[0][2]
-                    self.PcP_pick = self.event_info[0][5] - self.event_info[0][3]
-                    self.PKiKP_pick = self.event_info[0][6] - self.event_info[0][4]
+                    self.load_event_info()
                 else:
                     print('Error: load event info error!!!')
                     print("Alert: event info file is not match with the data file!!!")
@@ -98,6 +97,7 @@ class Phaseviewer:
                 if 'P' not in self.travel_times.keys():
                     print('%s : no P arrival.' % self.data_files[self.index])
                     # phase cross correlation
+                    self.P_predic_pick = 0
                     self.PcP_cc_wave = 0 
                     self.PKiKP_cc_wave = 0
                     self.PcP_cc_max = 0
@@ -105,6 +105,7 @@ class Phaseviewer:
                     self.PcP_cc_lag = 0
                     self.PKiKP_cc_lag = 0
                 else:
+                    self.P_predic_pick = self.travel_times['P']
                     # phase cross correlation
                     self.PcP_cc_wave = self.cross_corr['PcP']['corr_wave']
                     self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
@@ -135,90 +136,120 @@ class Phaseviewer:
         toolbar = NavigationToolbar2Tk(self.canvas, self.canvas_container)
         toolbar.update()
         toolbar.pack(side=tk.TOP, fill=tk.BOTH, anchor=tk.CENTER, expand=True)
+        # buttons and labels
+        self.canvas_label = tk.Frame(self.master)
+        self.canvas_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+        self.canvas_button = tk.Frame(self.master)
+        self.canvas_button.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+        # reset button
+        reset_button = tk.Button(self.canvas_button, text="Reset", command=self.resert_view)
+        reset_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        # quit button
+        quit_button = tk.Button(self.canvas_button, text=" Quit", command=self._quit)
+        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        # drop button
+        drop_button = tk.Button(self.canvas_button, text=" Drop ", command=self.drop_data)
+        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
+        # drop value
+        self.drop_data_value = tk.Label(self.canvas_button, text='yes' if self.drop_data_flag==1 else 'no')
+        self.drop_data_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # phase classification button
+        P_class_button = tk.Button(self.canvas_button, text=" P ", command=lambda: self.phases_classify(1))
+        P_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=20, pady=10)
+        self.P_classify_value = tk.Label(self.canvas_button, text='yes' if self.P_classify==1 else 'no')
+        self.P_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # pick-up P button
+        P_pick_button = tk.Button(self.canvas_button, text=" P Pick ", command=lambda: self.phase_pick(1))
+        P_pick_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=25, pady=10)
+        # P value
+        self.P_pick_value = tk.Label(self.canvas_button, text='s %.3f='%self.P_pick)
+        self.P_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=25, pady=10)
         # next button
-        next_button = tk.Button(self.canvas_container, text="Next", command=self.plot_next_data)
+        next_button = tk.Button(self.canvas_label, text=" Next", command=self.plot_next_data)
         next_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
         # Last button
-        last_button = tk.Button(self.canvas_container, text="Last", command=self.plot_last_data)
+        last_button = tk.Button(self.canvas_label, text="Last ", command=self.plot_last_data)
         last_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
         # phase classification button
-        PcP_class_button = tk.Button(self.canvas_container, text=" PcP ", command=lambda: self.phase_classify(1))
+        PcP_class_button = tk.Button(self.canvas_label, text=" PcP ", command=lambda: self.phases_classify(2))
         PcP_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
-        self.PcP_classify_value = tk.Label(self.canvas_container, text='yes' if self.PcP_classify==1 else 'no')
+        self.PcP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PcP_classify==1 else 'no')
         self.PcP_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
-        PKiKP_class_button = tk.Button(self.canvas_container, text="PKiKP", command=lambda: self.phase_classify(2))
+        PKiKP_class_button = tk.Button(self.canvas_label, text="PKiKP", command=lambda: self.phases_classify(3))
         PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
-        self.PKiKP_classify_value = tk.Label(self.canvas_container, text='yes' if self.PKiKP_classify==1 else 'no')
+        self.PKiKP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PKiKP_classify==1 else 'no')
         self.PKiKP_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PcP button
-        PcP_pick_button = tk.Button(self.canvas_container, text=" PcP Pick ", command=lambda: self.phase_pick(1))
+        PcP_pick_button = tk.Button(self.canvas_label, text=" PcP Pick ", command=lambda: self.phase_pick(2))
         PcP_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # PcP value
-        self.PcP_pick_value = tk.Label(self.canvas_container, text='=%.3f s'%self.PcP_pick)
+        self.PcP_pick_value = tk.Label(self.canvas_label, text='=%.3f s'%self.P_pick)
         self.PcP_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PKiKP button
-        PKiKP_class_button = tk.Button(self.canvas_container, text="PKiKP Pick", command=lambda: self.phase_pick(2))
+        PKiKP_class_button = tk.Button(self.canvas_label, text="PKiKP Pick", command=lambda: self.phase_pick(3))
         PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # # PKiKP value
-        self.PKiKP_pick_value = tk.Label(self.canvas_container, text='s %.3f='%self.PKiKP_pick)
+        self.PKiKP_pick_value = tk.Label(self.canvas_label, text='s %.3f='%self.PKiKP_pick)
         self.PKiKP_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
-        # drop value
-        self.drop_data_value = tk.Label(self.canvas_container, text='yes' if self.drop_data_flag==1 else 'no')
-        self.drop_data_value.pack(side=tk.TOP, fill=tk.BOTH, anchor=tk.CENTER)
-        # drop button
-        drop_button = tk.Button(self.canvas_container, text="Drop", command=self.drop_data)
-        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
-        # quit button
-        quit_button = tk.Button(self.canvas_container, text="Quit", command=self._quit)
-        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=5)
-
-
     
     # classify seismic phases
-    def phase_classify(self, phase_num):
+    def phases_classify(self, phase_num):
         if phase_num == 1:
+            if self.P_classify == 1:
+                self.P_classify = 0
+                self.P_classify_value.config(text='no')
+            else:
+                self.P_classify = 1
+                self.P_classify_value.config(text='yes')
+        elif phase_num == 2:
+            # switch_classify(self.PcP_classify, self.PcP_classify_value)
             if self.PcP_classify == 1:
                 self.PcP_classify = 0
                 self.PcP_classify_value.config(text='no')
             else:
                 self.PcP_classify = 1
                 self.PcP_classify_value.config(text='yes')
-        elif phase_num == 2:
+        elif phase_num == 3:
             if self.PKiKP_classify == 1:
                 self.PKiKP_classify = 0
                 self.PKiKP_classify_value.config(text='no')
             else:
                 self.PKiKP_classify = 1
                 self.PKiKP_classify_value.config(text='yes')
-    
     # phase pick-up
     def phase_pick(self, phase_num):
         if phase_num == 1:
-            self.PcP_pick_active = 1
-            self.PKiKP_pick_active = 0
+            self.pick_active = [1, 0, 0]
         elif phase_num == 2:
-            self.PcP_pick_active = 0
-            self.PKiKP_pick_active = 1        
+            self.pick_active = [0, 1, 0]      
+        elif phase_num == 3:
+            self.pick_active = [0, 0, 1]
         self.fig.canvas.mpl_connect('button_press_event', self.phase_mouse_pick)
+
     def phase_mouse_pick(self, event):
-        if self.PcP_pick_active == 0 and self.PKiKP_pick_active == 1:
+        if self.pick_active[0] == 1:
             # in axes and left double click
             if event.inaxes and event.button == 1 and event.dblclick:
-                self.PKiKP_pick = event.xdata
-                self.PKiKP_pick_value.config(text='s %.3f='%self.PKiKP_pick)
-                # update PKiKP classification
-                if self.PKiKP_pick != 0:
-                    self.PKiKP_classify = 1
-                    self.PKiKP_classify_value.config(text='yes')
-        elif self.PcP_pick_active == 1 and self.PKiKP_pick_active == 0:
-            # in axes and left double click
+                self.P_pick = event.xdata
+                self.P_pick_value.config(text='s %.3f='%self.P_pick)
+                # update phase classification
+                if self.P_pick != 0:
+                    self.P_classify = 1
+                    self.P_classify_value.config(text='yes')
+        elif self.pick_active[1] == 1:
             if event.inaxes and event.button == 1 and event.dblclick:
                 self.PcP_pick = event.xdata
                 self.PcP_pick_value.config(text='=%.3f s'%self.PcP_pick)
-                # update PcP classification
                 if self.PcP_pick != 0:
                     self.PcP_classify = 1
                     self.PcP_classify_value.config(text='yes')
+        elif self.pick_active[2] == 1:
+            if event.inaxes and event.button == 1 and event.dblclick:
+                self.PKiKP_pick = event.xdata
+                self.PKiKP_pick_value.config(text='s %.3f='%self.PKiKP_pick)
+                if self.PKiKP_pick != 0:
+                    self.PKiKP_classify = 1
+                    self.PKiKP_classify_value.config(text='yes')
     
     # plot seismic phases for the next data self.file
     def plot_next_data(self):
@@ -232,6 +263,8 @@ class Phaseviewer:
         if hasattr(self, 'canvas_container'):
             plt.close()
             self.canvas_container.destroy()
+            self.canvas_button.destroy()
+            self.canvas_label.destroy()
         # plot the next data file
         self.plot_figure()
     
@@ -241,11 +274,14 @@ class Phaseviewer:
             self.index -= 1
             # load event info if ever see this event
             self.load_event_info()
+            print(self.P_classify, self.PcP_classify, self.PKiKP_classify, self.P_pick, self.PcP_pick, self.PKiKP_pick, self.drop_data_flag)
             self.close_window = False
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
                 plt.close()
                 self.canvas_container.destroy()
+                self.canvas_button.destroy()
+                self.canvas_label.destroy()
             # plot the previous data file
             self.plot_figure()
         else:
@@ -255,18 +291,32 @@ class Phaseviewer:
     def load_event_info(self):
         if self.index < len(self.event_info):
             # retrive the previous phase classification and pick-up
-            self.PcP_classify = self.event_info[self.index][1]
-            self.PKiKP_classify = self.event_info[self.index][2]
-            self.PcP_pick = self.event_info[self.index][5] - self.event_info[self.index][3]
-            self.PKiKP_pick = self.event_info[self.index][6] - self.event_info[self.index][4]
+            self.P_classify = self.event_info[self.index][1]
+            self.PcP_classify = self.event_info[self.index][2]
+            self.PKiKP_classify = self.event_info[self.index][3]
+            self.P_pick = self.event_info[self.index][7] - self.event_info[self.index][4]
+            self.PcP_pick = self.event_info[self.index][8] - self.event_info[self.index][5]
+            self.PKiKP_pick = self.event_info[self.index][9] - self.event_info[self.index][6]
             self.drop_data_flag = self.event_info[self.index][-1]
         else:
             # resert phase classification and pick-up
-            self.PcP_classify = 0
-            self.PKiKP_classify = 0
-            self.PcP_pick = 0
-            self.PKiKP_pick = 0
-            self.drop_data_flag = 0
+            self.resert_view()
+        
+    # resert phase classification and pick-up
+    def resert_view(self):
+        self.P_classify = 0
+        self.PcP_classify = 0
+        self.PKiKP_classify = 0
+        self.P_pick = 0
+        self.PcP_pick = 0
+        self.PKiKP_pick = 0
+        self.drop_data_flag = 0
+        self.P_classify_value.config(text='no')
+        self.PcP_classify_value.config(text='no')
+        self.PKiKP_classify_value.config(text='no')
+        self.P_pick_value.config(text='s %.3f='%self.P_pick)
+        self.PcP_pick_value.config(text='=%.3f s'%self.P_pick)
+        self.PKiKP_pick_value.config(text='s %.3f='%self.PKiKP_pick)
 
     # update event info if the event is already in the event info list
     def update_event_info(self):
@@ -283,12 +333,12 @@ class Phaseviewer:
     # get single wave data
     def single_wave_data(self):
         if self.wave_data_fig:
-            data_info = [self.data_files[self.index], self.PcP_classify, self.PKiKP_classify, self.PcP_predic_pick, self.PKiKP_predic_pick, 
-                            self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, 
-                            self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, 
-                            self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
+            data_info = [self.data_files[self.index], self.P_classify, self.PcP_classify, self.PKiKP_classify, self.P_predic_pick, self.PcP_predic_pick, 
+                         self.PKiKP_predic_pick, self.P_predic_pick+self.P_pick, self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, 
+                         self.PcP_predic_pick+self.PcP_cc_lag, self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, 
+                         self.PKiKP_wave, self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
         else:
-            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         return data_info
 
     # save event info to csv file
@@ -298,9 +348,9 @@ class Phaseviewer:
             self.update_event_info()
         # save event info to csv file
         print('Save event info to csv file (event_info.csv)...')
-        event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'PcP_classify', 'PKiKP_classify', 'PcP_predic_pick', 'PKiKP_predic_pick', 
-                                                                'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
-                                                                'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave', 'drop_data_flag'])
+        event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'P_classify', 'PcP_classify', 'PKiKP_classify', 'P_predic_pick', 'PcP_predic_pick', 'PKiKP_predic_pick', 
+                                                            'P_manual_pick', 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
+                                                            'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave', 'drop_data_flag'])
         event_data.to_csv(self.output_file, index=False)
         print('Saving...... Done!')
 
