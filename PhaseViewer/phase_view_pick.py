@@ -274,7 +274,6 @@ class Phaseviewer:
             self.index -= 1
             # load event info if ever see this event
             self.load_event_info()
-            print(self.P_classify, self.PcP_classify, self.PKiKP_classify, self.P_pick, self.PcP_pick, self.PKiKP_pick, self.drop_data_flag)
             self.close_window = False
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
