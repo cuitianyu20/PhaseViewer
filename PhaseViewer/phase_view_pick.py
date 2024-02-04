@@ -2,6 +2,7 @@ import glob
 import obspy
 import pandas as pd
 import tkinter as tk
+from tkinter import messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2Tk
 from .phase_map import phase_fig
@@ -141,49 +142,49 @@ class Phaseviewer:
         self.canvas_label.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
         self.canvas_button = tk.Frame(self.master)
         self.canvas_button.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
-        # reset button
-        reset_button = tk.Button(self.canvas_button, text="Reset", command=self.resert_view)
-        reset_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
-        # quit button
-        quit_button = tk.Button(self.canvas_button, text=" Quit", command=self._quit)
-        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
-        # drop button
-        drop_button = tk.Button(self.canvas_button, text=" Drop ", command=self.drop_data)
-        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
-        # drop value
-        self.drop_data_value = tk.Label(self.canvas_button, text='yes' if self.drop_data_flag==1 else 'no')
-        self.drop_data_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
-        # phase classification button
-        P_class_button = tk.Button(self.canvas_button, text=" P ", command=lambda: self.phases_classify(1))
-        P_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=20, pady=10)
-        self.P_classify_value = tk.Label(self.canvas_button, text='yes' if self.P_classify==1 else 'no')
-        self.P_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
-        # pick-up P button
-        P_pick_button = tk.Button(self.canvas_button, text=" P Pick ", command=lambda: self.phase_pick(1))
-        P_pick_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=25, pady=10)
-        # P value
-        self.P_pick_value = tk.Label(self.canvas_button, text='s %.3f='%self.P_pick)
-        self.P_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=25, pady=10)
         # next button
-        next_button = tk.Button(self.canvas_label, text=" Next", command=self.plot_next_data)
+        next_button = tk.Button(self.canvas_button, text=" Next", command=self.plot_next_data)
         next_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
         # Last button
-        last_button = tk.Button(self.canvas_label, text="Last ", command=self.plot_last_data)
+        last_button = tk.Button(self.canvas_button, text="Last ", command=self.plot_last_data)
         last_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=5)
+        # drop button
+        drop_button = tk.Button(self.canvas_button, text="Drop ", command=self.drop_data)
+        drop_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
+        # drop value
+        self.drop_data_value = tk.Label(self.canvas_button, text='yes' if self.drop_data_flag==1 else 'no ')
+        self.drop_data_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # phase classification button
+        P_class_button = tk.Button(self.canvas_button, text="  P  ", command=lambda: self.phases_classify(1))
+        P_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
+        self.P_classify_value = tk.Label(self.canvas_button, text='yes' if self.P_classify==1 else ' no')
+        self.P_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # pick-up P button
+        P_pick_button = tk.Button(self.canvas_button, text="  P Pick  ", command=lambda: self.phase_pick(1))
+        P_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
+        # P value
+        self.P_pick_value = tk.Label(self.canvas_button, text='=%.3f s'%self.P_pick)
+        self.P_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # reset button
+        reset_button = tk.Button(self.canvas_label, text="Reset", command=self.reset_view)
+        reset_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=10)
+        # quit button
+        quit_button = tk.Button(self.canvas_label, text=" Quit", command=self._quit)
+        quit_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=15, pady=10)
         # phase classification button
         PcP_class_button = tk.Button(self.canvas_label, text=" PcP ", command=lambda: self.phases_classify(2))
         PcP_class_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
-        self.PcP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PcP_classify==1 else 'no')
+        self.PcP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PcP_classify==1 else 'no ')
         self.PcP_classify_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         PKiKP_class_button = tk.Button(self.canvas_label, text="PKiKP", command=lambda: self.phases_classify(3))
         PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
-        self.PKiKP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PKiKP_classify==1 else 'no')
+        self.PKiKP_classify_value = tk.Label(self.canvas_label, text='yes' if self.PKiKP_classify==1 else ' no')
         self.PKiKP_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PcP button
         PcP_pick_button = tk.Button(self.canvas_label, text=" PcP Pick ", command=lambda: self.phase_pick(2))
         PcP_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # PcP value
-        self.PcP_pick_value = tk.Label(self.canvas_label, text='=%.3f s'%self.P_pick)
+        self.PcP_pick_value = tk.Label(self.canvas_label, text='=%.3f s'%self.PcP_pick)
         self.PcP_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PKiKP button
         PKiKP_class_button = tk.Button(self.canvas_label, text="PKiKP Pick", command=lambda: self.phase_pick(3))
@@ -197,7 +198,7 @@ class Phaseviewer:
         if phase_num == 1:
             if self.P_classify == 1:
                 self.P_classify = 0
-                self.P_classify_value.config(text='no')
+                self.P_classify_value.config(text='no ')
             else:
                 self.P_classify = 1
                 self.P_classify_value.config(text='yes')
@@ -205,14 +206,14 @@ class Phaseviewer:
             # switch_classify(self.PcP_classify, self.PcP_classify_value)
             if self.PcP_classify == 1:
                 self.PcP_classify = 0
-                self.PcP_classify_value.config(text='no')
+                self.PcP_classify_value.config(text='no ')
             else:
                 self.PcP_classify = 1
                 self.PcP_classify_value.config(text='yes')
         elif phase_num == 3:
             if self.PKiKP_classify == 1:
                 self.PKiKP_classify = 0
-                self.PKiKP_classify_value.config(text='no')
+                self.PKiKP_classify_value.config(text=' no')
             else:
                 self.PKiKP_classify = 1
                 self.PKiKP_classify_value.config(text='yes')
@@ -231,7 +232,7 @@ class Phaseviewer:
             # in axes and left double click
             if event.inaxes and event.button == 1 and event.dblclick:
                 self.P_pick = event.xdata
-                self.P_pick_value.config(text='s %.3f='%self.P_pick)
+                self.P_pick_value.config(text='=%.3f s'%self.P_pick)
                 # update phase classification
                 if self.P_pick != 0:
                     self.P_classify = 1
@@ -299,10 +300,10 @@ class Phaseviewer:
             self.drop_data_flag = self.event_info[self.index][-1]
         else:
             # resert phase classification and pick-up
-            self.resert_view()
+            self.reset_view()
         
     # resert phase classification and pick-up
-    def resert_view(self):
+    def reset_view(self):
         self.P_classify = 0
         self.PcP_classify = 0
         self.PKiKP_classify = 0
@@ -310,12 +311,13 @@ class Phaseviewer:
         self.PcP_pick = 0
         self.PKiKP_pick = 0
         self.drop_data_flag = 0
-        self.P_classify_value.config(text='no')
-        self.PcP_classify_value.config(text='no')
-        self.PKiKP_classify_value.config(text='no')
-        self.P_pick_value.config(text='s %.3f='%self.P_pick)
+        self.P_classify_value.config(text=' no')
+        self.PcP_classify_value.config(text='no ')
+        self.PKiKP_classify_value.config(text=' no')
+        self.P_pick_value.config(text='=%.3f s'%self.P_pick)
         self.PcP_pick_value.config(text='=%.3f s'%self.P_pick)
         self.PKiKP_pick_value.config(text='s %.3f='%self.PKiKP_pick)
+        self.drop_data_value.config(text='no ')
 
     # update event info if the event is already in the event info list
     def update_event_info(self):
@@ -360,14 +362,18 @@ class Phaseviewer:
             self.drop_data_value.config(text='yes')
         else:
             self.drop_data_flag = 0
-            self.drop_data_value.config(text='no')
+            self.drop_data_value.config(text='no ')
 
     # quit button
     def _quit(self):
-        self.save_info()
-        print('Close the window...')
-        self.master.quit()     # abort mainloop
-        self.master.destroy()  
+        result = messagebox.askyesnocancel("Confirmation", "Do you sure to exit?")
+        if result is True:
+            self.save_info()
+            print('Save data and close the window...')
+            self.master.quit()
+            self.master.destroy()
+        elif result is False:
+            print("Cancel to exit.")
 
 
 if __name__ == '__main__':
