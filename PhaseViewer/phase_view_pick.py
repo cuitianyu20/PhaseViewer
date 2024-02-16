@@ -350,7 +350,7 @@ class Phaseviewer:
         # save event info to csv file
         print('Save event info to csv file (event_info.csv)...')
         event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'P_classify', 'PcP_classify', 'PKiKP_classify', 'P_predic_pick', 'PcP_predic_pick', 'PKiKP_predic_pick', 
-                                                            'P_manual_pick', 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pcik', 'PKiKP_cc_pick', 'PcP_cc_max', 
+                                                            'P_manual_pick', 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pick', 'PKiKP_cc_pick', 'PcP_cc_max', 
                                                             'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave', 'drop_data_flag'])
         event_data.to_csv(self.output_file, index=False)
         print('Saving...... Done!')
