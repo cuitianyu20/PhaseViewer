@@ -117,7 +117,7 @@ class Phaseviewer:
                     self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
             except:
                 self.wave_data_fig = False
-                self.fig = plt.figure(figsize=(8, 6))
+                self.fig = plt.figure(figsize=(8.5, 7))
                 print('Error: load error (%s)' % self.data_files[self.index])
 
             self.embed_fig_in_tkinter(self.fig)

@@ -125,11 +125,13 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     samplate = st_ori[0].stats.sampling_rate
     arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)
     P_wave_yes = [1 if 'P' in arrival_time_data.keys() else 0][0]
+    if P_wave_yes == 0:
+        phase_name = phase_name[1:]
     # filtered data
     wave_cut_times, phase_wave_info, mean_info, SNR_info, amp_percent_info, cross_corr = get_data_info(st, phase_name, P_wave_yes, arrival_time_data, samplate)
     # raw data
     wave_cut_times_ori, phase_wave_info_ori, mean_info_ori, SNR_info_ori, amp_percent_info_ori, cross_corr_ori = get_data_info(st_ori, phase_name, P_wave_yes, arrival_time_data, samplate)
-    if filter_data == True:
+    if filter_data == True and P_wave_yes == 1:
         filter_set = get_filter_set(filter_freq_perturb, filter_freq_min, filter_freq_max, filter_freq_interval, filter_freq_band_min, filter_freq)
         # calculate the predicted arrival time by cross correlation for different filter set
         cc_pred_arrival = []
@@ -239,3 +241,4 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     # plt.show()
     # plt.savefig('phase_fig_%s_%s.png'%(filter_freq[0], filter_freq[1]))
     return fig, arrival_time_data, phase_wave_info, cross_corr
+
