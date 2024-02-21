@@ -18,7 +18,7 @@ from .utils import predicted_phase_arrival, phase_wave_cut
 waveform view and phase pick
 '''
 def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-30,30], sta_win=[-10, 10], lta_win=[-30, -10], 
-              cross_win=[-10, 10], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5, filter_freq_interval=0.05, filter_freq_band_min=0.5):
+              cross_win=[-10, 10], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5):
     # filters test
     def cal_cc_filter(st_tmp, phase_name_tmp, P_wave_yes, arrival_time_tmp, filter_freq, samplate):
         st_tmp.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=4, zerophase=True)
@@ -144,7 +144,8 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         phase_bins_list = []
         sm_cmap_list = []
         for i in range(2):
-            phase_density, phase_bins = np.histogram(cc_pred_arrival[:,i], bins=int(filter_freq_perturb*2/filter_freq_interval), density=True)
+            # phase_density, phase_bins = np.histogram(cc_pred_arrival[:,i], bins=int(filter_freq_perturb*2/filter_freq_interval), density=True)
+            phase_density, phase_bins = np.histogram(cc_pred_arrival[:,i], bins=20, density=True)
             phase_density = phase_density/np.max(phase_density)
             phase_density_list.append(phase_density)
             phase_bins_list.append(phase_bins)
@@ -213,12 +214,12 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
                     min_ylim = ax.get_ylim()[0]
                     max_ylim = ax.get_ylim()[1]
                     ax.vlines(cross_corr[phase]['lag_max'], min_ylim, max_ylim, colors=phase_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
-                    ax.vlines(cross_corr_ori[phase]['lag_max'], min_ylim, max_ylim, colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
+                    ax.vlines(cross_corr_ori[phase]['lag_max'], min_ylim, max_ylim, colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width-0.5, zorder=0)
                     # fill predicted arrival time density
                     if filter_data == True:
                         for k in range(len(phase_bins_list[i])-1):
                             ax.fill_between([phase_bins_list[i][k],phase_bins_list[i][k+1]],min_ylim,max_ylim,
-                                            facecolor=sm_cmap_list[i].to_rgba(phase_density_list[i][k]), alpha=0.6, zorder=0)
+                                            facecolor=sm_cmap_list[i].to_rgba(phase_density_list[i][k]), alpha=0.4, zorder=0)
                 if filter_data == True:
                     ax.set_title('Phase: %s (filter: %s-%s Hz)'%(phase, filter_freq[0], filter_freq[1]))
                 else:

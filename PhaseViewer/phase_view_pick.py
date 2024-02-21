@@ -12,7 +12,8 @@ GUI for seismic phase view and pick-up
 """
 class Phaseviewer:
     # initialize
-    def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], event_info=None, sort_by_dis=True, output_file='event_info.csv'):
+    def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
+                 filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, sort_by_dis=True, output_file='event_info.csv'):
         print("==========================================================================")
         print("===================  Welcome to Seismic Phase Viewer!  ===================")
         print("===================  Usage:                            ===================")
@@ -54,6 +55,11 @@ class Phaseviewer:
         # filter data
         self.filter = filter
         self.filter_freq = filter_freq
+        self.filter_freq_perturb = filter_freq_perturb
+        self.filter_freq_min = filter_freq_min
+        self.filter_freq_max = filter_freq_max
+        self.filter_freq_interval = filter_freq_interval
+        self.filter_freq_band_min = filter_freq_band_min
         # data index
         self.index = 0
         # press last button index
@@ -88,7 +94,10 @@ class Phaseviewer:
                     self.event_info = []
             file_path = self.data_files[self.index]
             try:
-                self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq)
+                self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, 
+                                                                                          filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min,
+                                                                                          filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval,
+                                                                                          filter_freq_band_min=self.filter_freq_band_min)
                 self.wave_data_fig = True
                 # predicted phase arrival
                 self.PcP_predic_pick = self.travel_times['PcP']
