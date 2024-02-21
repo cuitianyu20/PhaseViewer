@@ -21,6 +21,7 @@ class Phaseviewer:
         print("===================  3. Leave and save result: click 'Quit' button =======")
         print("==========================================================================")
         master = tk.Tk()
+        master.geometry("850x830")
         if event_info is not None:
             # load event info
             self.event_info_file = 1
