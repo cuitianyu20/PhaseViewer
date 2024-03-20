@@ -69,8 +69,8 @@ class Phaseviewer:
         self.filter_freq_band_min = filter_freq_band_min
         # data index
         self.index = 0
-        # press last button index
-        self.last_index = 0
+        # correct index
+        self.correct_index = 0
         # output data name
         self.output_file = output_file
         # phase
@@ -80,6 +80,9 @@ class Phaseviewer:
         self.P_pick = 0
         self.PcP_pick = 0
         self.PKiKP_pick = 0
+        self.P_pick_tmp = 0
+        self.PcP_pick_tmp = 0
+        self.PKiKP_pick_tmp = 0
         # correct phase pick-up
         self.correct_flag = False
         # load data
@@ -119,26 +122,32 @@ class Phaseviewer:
             # phase wave cut
             self.PcP_wave = self.phase_wave['view_cut']['PcP']
             self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
-            if self.correct_flag == False:
-                if 'P' not in self.travel_times.keys():
-                    print('%s : no P arrival.' % self.data_files[self.index])
-                    # phase cross correlation
-                    self.P_predic_pick = 0
-                    self.PcP_cc_wave = 0 
-                    self.PKiKP_cc_wave = 0
-                    self.PcP_cc_max = 0
-                    self.PKiKP_cc_max = 0
-                    self.PcP_cc_lag = 0
-                    self.PKiKP_cc_lag = 0
-                else:
-                    self.P_predic_pick = self.travel_times['P']
-                    # phase cross correlation
-                    self.PcP_cc_wave = self.cross_corr['PcP']['corr_wave']
-                    self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
-                    self.PcP_cc_max = self.cross_corr['PcP']['corr_max']
-                    self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
-                    self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
-                    self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
+            if 'P' not in self.travel_times.keys():
+                print('%s : no P arrival.' % self.data_files[self.index])
+                # phase cross correlation
+                self.P_predic_pick = 0
+                self.PcP_cc_wave = 0 
+                self.PKiKP_cc_wave = 0
+                self.PcP_cc_max = 0
+                self.PKiKP_cc_max = 0
+                self.PcP_cc_lag = 0
+                self.PKiKP_cc_lag = 0
+            else:
+                self.P_predic_pick = self.travel_times['P']
+                # phase cross correlation
+                self.PcP_cc_wave = self.cross_corr['PcP']['corr_wave']
+                self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
+                self.PcP_cc_max = self.cross_corr['PcP']['corr_max']
+                self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
+                self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
+                self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
+            if self.correct_flag:
+                self.P_pick_tmp += self.P_pick
+                self.PcP_pick_tmp += self.PcP_pick
+                self.PKiKP_pick_tmp += self.PKiKP_pick
+                self.P_pick = 0
+                self.PcP_pick = 0
+                self.PKiKP_pick = 0
         except:
             self.wave_data_fig = False
             self.fig = plt.figure(figsize=(8.5, 7))
@@ -280,7 +289,10 @@ class Phaseviewer:
     # correct seismic phase pick-up
     def correct_phase_pick(self):
         self.correct_flag = True
-        correct_pick = [self.P_pick, self.PcP_pick, self.PKiKP_pick]
+        if self.correct_index == 0:
+            correct_pick = [self.P_pick, self.PcP_pick, self.PKiKP_pick]
+        else:
+            correct_pick = [self.P_pick+self.P_pick_tmp, self.PcP_pick+self.PcP_pick_tmp, self.PKiKP_pick+self.PKiKP_pick_tmp]
         self.close_window = False
         # clear the previous fig object
         if hasattr(self, 'canvas_container'):
@@ -289,7 +301,7 @@ class Phaseviewer:
             self.canvas_button.destroy()
             self.canvas_label.destroy()
         self.plot_figure(self.correct_flag, correct_pick)
-
+        self.correct_index += 1
 
     # plot seismic phases for the next data self.file
     def plot_next_data(self):
@@ -353,7 +365,12 @@ class Phaseviewer:
         self.P_pick = 0
         self.PcP_pick = 0
         self.PKiKP_pick = 0
+        self.P_pick_tmp = 0
+        self.PcP_pick_tmp = 0
+        self.PKiKP_pick_tmp = 0
         self.drop_data_flag = 0
+        self.correct_index = 0
+        self.correct_flag = False
         self.P_classify_value.config(text=' no')
         self.PcP_classify_value.config(text='no ')
         self.PKiKP_classify_value.config(text=' no')
@@ -378,9 +395,9 @@ class Phaseviewer:
     def single_wave_data(self):
         if self.wave_data_fig:
             data_info = [self.data_files[self.index], self.P_classify, self.PcP_classify, self.PKiKP_classify, self.P_predic_pick, self.PcP_predic_pick, 
-                         self.PKiKP_predic_pick, self.P_predic_pick+self.P_pick, self.PcP_predic_pick+self.PcP_pick, self.PKiKP_predic_pick+self.PKiKP_pick, 
-                         self.PcP_predic_pick+self.PcP_cc_lag, self.PKiKP_predic_pick+self.PKiKP_cc_lag, self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, 
-                         self.PKiKP_wave, self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
+                         self.PKiKP_predic_pick, self.P_predic_pick+self.P_pick_tmp+self.P_pick, self.PcP_predic_pick+self.PcP_pick_tmp+self.PcP_pick, 
+                         self.PKiKP_predic_pick+self.PKiKP_pick_tmp+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, self.PKiKP_predic_pick+self.PKiKP_cc_lag, 
+                         self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
         else:
             data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         return data_info
@@ -389,6 +406,7 @@ class Phaseviewer:
     def save_info(self):
         # save event info for last event
         if self.index < len(self.data_files):
+            self.correct_phase_pick()
             self.update_event_info()
         # save event info to csv file
         print('Save event info to csv file (event_info.csv)...')
