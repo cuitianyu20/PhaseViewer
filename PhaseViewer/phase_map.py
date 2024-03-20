@@ -17,11 +17,11 @@ from .utils import predicted_phase_arrival, phase_wave_cut
 '''
 waveform view and phase pick
 '''
-def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-15,15], sta_win=[-10, 10], lta_win=[-30, -10], 
+def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], filter_corner=4, zerophase=False, phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-10,10], sta_win=[-10, 10], lta_win=[-30, -10], 
               cross_win=[-10, 10], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5, correct_flag=False, correct_pick=None):
     # filters test
     def cal_cc_filter(st_tmp, phase_name_tmp, P_wave_yes, arrival_time_tmp, filter_freq, samplate):
-        st_tmp.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=4, zerophase=True)
+        st_tmp.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=filter_corner, zerophase=zerophase)
         st_tmp.taper(max_percentage=0.05, type='cosine')
         # wave cut
         time_win_list = {"cross_cut": cross_win}
@@ -117,7 +117,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     st = obspy.read(data_wave)
     st_ori = st.copy()
     if filter_data == True:
-        st.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=4, zerophase=True)
+        st.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=filter_corner, zerophase=zerophase)
         st.taper(max_percentage=0.05, type='cosine')
     # arrival time
     event_depth = st_ori[0].stats.sac.evdp
@@ -125,13 +125,15 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     samplate = st_ori[0].stats.sampling_rate
     arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)    
     arrival_time_data_ori = arrival_time_data.copy()
-    if correct_flag == True:
-        arrival_time_data['P'] += correct_pick[0]
-        arrival_time_data['PcP'] += correct_pick[1]
-        arrival_time_data['PKiKP'] += correct_pick[2]
     P_wave_yes = [1 if 'P' in arrival_time_data.keys() else 0][0]
     if P_wave_yes == 0:
         phase_name = phase_name[1:]
+    if correct_flag == True:
+        if P_wave_yes == 1:
+            arrival_time_data['P'] += correct_pick[0]
+        arrival_time_data['PcP'] += correct_pick[1]
+        arrival_time_data['PKiKP'] += correct_pick[2]
+        
     # filtered data
     wave_cut_times, phase_wave_info, mean_info, SNR_info, amp_percent_info, cross_corr = get_data_info(st, phase_name, P_wave_yes, arrival_time_data, samplate)
     # raw data

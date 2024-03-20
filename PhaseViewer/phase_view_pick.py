@@ -12,7 +12,7 @@ GUI for seismic phase view and pick-up
 """
 class Phaseviewer:
     # initialize
-    def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
+    def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_corner=4, zerophase=False, filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
                  filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, skip_load_event=False, sort_by_dis=True, correct_current_data=False, 
                  output_file='event_info.csv'):
         print("==========================================================================")
@@ -27,7 +27,7 @@ class Phaseviewer:
         if event_info is not None:
             # load event info
             self.event_info_file = 1
-            self.event_info = pd.read_csv(event_info).values.tolist()
+            self.event_info = pd.read_csv(event_info,usecols=range(19)).values.tolist()
         else:
             self.event_info_file = 0
             self.event_info = []
@@ -39,7 +39,7 @@ class Phaseviewer:
         self.data_folder_path = datafolder
         if correct_current_data:
             try:
-                self.data_files = pd.read_csv(event_info)['event_wave'].tolist()
+                self.data_files = pd.read_csv(event_info,usecols=range(19))['event_wave'].tolist()
             except:
                 raise ValueError('Please load the correct event info file!!!')
         else:
@@ -70,6 +70,8 @@ class Phaseviewer:
         self.filter_freq_max = filter_freq_max
         self.filter_freq_interval = filter_freq_interval
         self.filter_freq_band_min = filter_freq_band_min
+        self.filter_corner = filter_corner
+        self.zerophase = zerophase
         # data index
         self.index = 0
         # correct index
@@ -114,10 +116,10 @@ class Phaseviewer:
     def plot_figure(self, correct_flag=False, correct_pick=[0, 0, 0]):
         file_path = self.data_files[self.index]
         try:
-            self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, 
-                                                                                        filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min,
-                                                                                        filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval,
-                                                                                        filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
+            self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
+                                                                                      zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
+                                                                                      filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, 
+                                                                                      filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
             self.wave_data_fig = True
             # predicted phase arrival
             self.PcP_predic_pick = self.travel_times['PcP']
@@ -313,6 +315,7 @@ class Phaseviewer:
         if self.index < len(self.data_files)-1:
             self.index += 1
             # load event info if ever see this event
+            self.reset_view()
             self.load_event_info()
             self.close_window = False
             # clear the previous fig object
@@ -332,6 +335,7 @@ class Phaseviewer:
         if self.index > 0:
             self.index -= 1
             # load event info if ever see this event
+            self.reset_view()
             self.load_event_info()
             self.close_window = False
             # clear the previous fig object
@@ -356,6 +360,7 @@ class Phaseviewer:
             self.PcP_pick = self.event_info[self.index][8] - self.event_info[self.index][5]
             self.PKiKP_pick = self.event_info[self.index][9] - self.event_info[self.index][6]
             self.drop_data_flag = self.event_info[self.index][-1]
+            self.correct_flag = False
         else:
             # resert phase classification and pick-up
             self.reset_view()
