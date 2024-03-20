@@ -17,8 +17,8 @@ from .utils import predicted_phase_arrival, phase_wave_cut
 '''
 waveform view and phase pick
 '''
-def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-30,30], sta_win=[-10, 10], lta_win=[-30, -10], 
-              cross_win=[-10, 10], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5):
+def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-15,15], sta_win=[-10, 10], lta_win=[-30, -10], 
+              cross_win=[-10, 10], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5, correct_flag=False, correct_pick=None):
     # filters test
     def cal_cc_filter(st_tmp, phase_name_tmp, P_wave_yes, arrival_time_tmp, filter_freq, samplate):
         st_tmp.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=4, zerophase=True)
@@ -123,7 +123,12 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     event_depth = st_ori[0].stats.sac.evdp
     epi_distance = st_ori[0].stats.sac.gcarc
     samplate = st_ori[0].stats.sampling_rate
-    arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)
+    arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)    
+    arrival_time_data_ori = arrival_time_data.copy()
+    if correct_flag == True:
+        arrival_time_data['P'] += correct_pick[0]
+        arrival_time_data['PcP'] += correct_pick[1]
+        arrival_time_data['PKiKP'] += correct_pick[2]
     P_wave_yes = [1 if 'P' in arrival_time_data.keys() else 0][0]
     if P_wave_yes == 0:
         phase_name = phase_name[1:]
@@ -155,7 +160,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
             sm = ScalarMappable(norm=norm, cmap=cmap_cut)
             sm_cmap_list.append(sm)
     # figure plot
-    text_loc = [0.7, 0.6]
+    text_loc = [0.8, 0.7]
     fig = plt.figure(figsize=(8.5, 7))
     row_num = 5
     column_num = 2
@@ -241,5 +246,5 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     plt.tight_layout()
     # plt.show()
     # plt.savefig('phase_fig_%s_%s.png'%(filter_freq[0], filter_freq[1]))
-    return fig, arrival_time_data, phase_wave_info, cross_corr
+    return fig, arrival_time_data_ori, phase_wave_info, cross_corr
 

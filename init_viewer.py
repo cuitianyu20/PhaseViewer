@@ -1,4 +1,3 @@
-
 import PhaseViewer
 
 ### event folder ###
@@ -24,13 +23,15 @@ filter_freq_interval = 0.1      # frequency interval (Hz)
 filter_freq_band_min = 0.5      # min frequency band (Hz) 
 
 ### load selected event information ###
-event_info = None   # if load selected event information, set event_info = "event_info.csv"
-# event_info = "event_info.csv"
+# event_info = None   # if load selected event information, set event_info = "event_info.csv"
+event_info = "event_info.csv"
+skip_load_event = False  # True: skip recorded event information; False: load event information from first data
+correct_current_data = True # True: just correct current data; False: load current data and load unprocessed data
 
 ### output file ###
-output_file = "event_info.csv" # output file name
+output_file = "event_info_test.csv" # output file name
 
 # phase viewer: return event_info,csv file (event informatin)
 PhaseViewer.Phaseviewer(event_folder, folder_order=folder_order, filter=filter_data, filter_freq=filter_freq, filter_freq_perturb=filter_freq_perturb,
                         filter_freq_min=filter_freq_min, filter_freq_max=filter_freq_max, filter_freq_interval=filter_freq_interval, filter_freq_band_min=filter_freq_band_min,
-                        event_info=event_info, sort_by_dis=sort_by_distance, output_file=output_file)
+                        event_info=event_info, skip_load_event=skip_load_event, sort_by_dis=sort_by_distance, correct_current_data=correct_current_data, output_file=output_file)

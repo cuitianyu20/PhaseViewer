@@ -13,7 +13,8 @@ GUI for seismic phase view and pick-up
 class Phaseviewer:
     # initialize
     def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
-                 filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, sort_by_dis=True, output_file='event_info.csv'):
+                 filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, skip_load_event=False, sort_by_dis=True, correct_current_data=False, 
+                 output_file='event_info.csv'):
         print("==========================================================================")
         print("===================  Welcome to Seismic Phase Viewer!  ===================")
         print("===================  Usage:                            ===================")
@@ -32,26 +33,32 @@ class Phaseviewer:
             self.event_info = []
         self.master = master
         self.master.title("Seismic Phase Viewer")
+        # skip load event info
+        self.skip_load_event = skip_load_event
         # self.file folder path
         self.data_folder_path = datafolder
-        if folder_order == 1:
-            self.data_files = glob.glob(self.data_folder_path + "/*.sac")
-            if sort_by_dis:
-                dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in self.data_files ]
-                self.data_files = [x for _,x in sorted(zip(dis_list,self.data_files))]
-        elif folder_order == 2:
-            event_list = sorted(list(set([data.split('/')[-2] for data in glob.glob(self.data_folder_path + "/*/*.sac")])))
-            self.data_files = []
-            for event in event_list:
-                event_files = sorted(glob.glob(self.data_folder_path + "/" + event + "/*.sac"))
-                if sort_by_dis:
-                    dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in event_files ]
-                    event_files = [x for _,x in sorted(zip(dis_list,event_files))]
-                self.data_files += event_files
+        if correct_current_data:
+            self.data_files = pd.read_csv(event_info)['event_wave'].tolist()
         else:
-            raise ValueError('Folder order error!!!')
+            if folder_order == 1:
+                self.data_files = glob.glob(self.data_folder_path + "/*.sac")
+                if sort_by_dis:
+                    dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in self.data_files ]
+                    self.data_files = [x for _,x in sorted(zip(dis_list,self.data_files))]
+            elif folder_order == 2:
+                event_list = sorted(list(set([data.split('/')[-2] for data in glob.glob(self.data_folder_path + "/*/*.sac")])))
+                self.data_files = []
+                for event in event_list:
+                    event_files = sorted(glob.glob(self.data_folder_path + "/" + event + "/*.sac"))
+                    if sort_by_dis:
+                        dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in event_files ]
+                        event_files = [x for _,x in sorted(zip(dis_list,event_files))]
+                    self.data_files += event_files
+            else:
+                raise ValueError('Folder order error!!!')
         if len(self.data_files) == 0:
             raise ValueError('No sac file in the folder!!!')
+
         # filter data
         self.filter = filter
         self.filter_freq = filter_freq
@@ -73,6 +80,23 @@ class Phaseviewer:
         self.P_pick = 0
         self.PcP_pick = 0
         self.PKiKP_pick = 0
+        # correct phase pick-up
+        self.correct_flag = False
+        # load data
+        if self.index < len(self.data_files):
+            if self.index == 0 and self.event_info_file == 1:
+                if self.data_files[self.index] == self.event_info[0][0]:
+                    print('Success: load event info!!!')
+                    # skip to the record index
+                    if self.skip_load_event:
+                        self.index = len(self.event_info) - 1
+                        print('Skip to the record index: %s' % self.event_info[-1][0])
+                    # load event info
+                    self.load_event_info()
+                else:
+                    print('Error: load event info error!!!')
+                    print("Alert: event info file is not match with the data file!!!")
+                    self.event_info = []
         # drop data
         self.drop_data_flag = 0
         # initial figure
@@ -81,30 +105,21 @@ class Phaseviewer:
         tk.mainloop()
 
     # plot seismic phases for the next data self.file
-    def plot_figure(self):
-        if self.index < len(self.data_files):
-            if self.index == 0 and self.event_info_file == 1:
-                if self.data_files[self.index] == self.event_info[0][0]:
-                    print('Success: load event info!!!')
-                    # load event info
-                    self.load_event_info()
-                else:
-                    print('Error: load event info error!!!')
-                    print("Alert: event info file is not match with the data file!!!")
-                    self.event_info = []
-            file_path = self.data_files[self.index]
-            try:
-                self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, 
-                                                                                          filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min,
-                                                                                          filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval,
-                                                                                          filter_freq_band_min=self.filter_freq_band_min)
-                self.wave_data_fig = True
-                # predicted phase arrival
-                self.PcP_predic_pick = self.travel_times['PcP']
-                self.PKiKP_predic_pick = self.travel_times['PKiKP']
-                # phase wave cut
-                self.PcP_wave = self.phase_wave['view_cut']['PcP']
-                self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
+    def plot_figure(self, correct_flag=False, correct_pick=[0, 0, 0]):
+        file_path = self.data_files[self.index]
+        try:
+            self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, 
+                                                                                        filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min,
+                                                                                        filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval,
+                                                                                        filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
+            self.wave_data_fig = True
+            # predicted phase arrival
+            self.PcP_predic_pick = self.travel_times['PcP']
+            self.PKiKP_predic_pick = self.travel_times['PKiKP']
+            # phase wave cut
+            self.PcP_wave = self.phase_wave['view_cut']['PcP']
+            self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
+            if self.correct_flag == False:
                 if 'P' not in self.travel_times.keys():
                     print('%s : no P arrival.' % self.data_files[self.index])
                     # phase cross correlation
@@ -124,16 +139,13 @@ class Phaseviewer:
                     self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
                     self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
                     self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
-            except:
-                self.wave_data_fig = False
-                self.fig = plt.figure(figsize=(8.5, 7))
-                print('Error: load error (%s)' % self.data_files[self.index])
+        except:
+            self.wave_data_fig = False
+            self.fig = plt.figure(figsize=(8.5, 7))
+            print('Error: load error (%s)' % self.data_files[self.index])
 
-            self.embed_fig_in_tkinter(self.fig)
-            self.canvas.draw()
-        else:
-            # quit button
-            self._quit()
+        self.embed_fig_in_tkinter(self.fig)
+        self.canvas.draw()
 
     # embed Matplotlib figure into Tkinter window
     def embed_fig_in_tkinter(self, fig):
@@ -169,6 +181,9 @@ class Phaseviewer:
         P_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         self.P_classify_value = tk.Label(self.canvas_button, text='yes' if self.P_classify==1 else ' no')
         self.P_classify_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
+        # correct figure button
+        correct_button = tk.Button(self.canvas_button, text="  Correct ", command=self.correct_phase_pick)
+        correct_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # pick-up P button
         P_pick_button = tk.Button(self.canvas_button, text="  P Pick  ", command=lambda: self.phase_pick(1))
         P_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
@@ -262,13 +277,10 @@ class Phaseviewer:
                     self.PKiKP_classify = 1
                     self.PKiKP_classify_value.config(text='yes')
     
-    # plot seismic phases for the next data self.file
-    def plot_next_data(self):
-        # update event info for last event
-        self.update_event_info()
-        self.index += 1
-        # load event info if ever see this event
-        self.load_event_info()
+    # correct seismic phase pick-up
+    def correct_phase_pick(self):
+        self.correct_flag = True
+        correct_pick = [self.P_pick, self.PcP_pick, self.PKiKP_pick]
         self.close_window = False
         # clear the previous fig object
         if hasattr(self, 'canvas_container'):
@@ -276,8 +288,29 @@ class Phaseviewer:
             self.canvas_container.destroy()
             self.canvas_button.destroy()
             self.canvas_label.destroy()
-        # plot the next data file
-        self.plot_figure()
+        self.plot_figure(self.correct_flag, correct_pick)
+
+
+    # plot seismic phases for the next data self.file
+    def plot_next_data(self):
+        # update event info for last event
+        self.update_event_info()
+        if self.index < len(self.data_files)-1:
+            self.index += 1
+            # load event info if ever see this event
+            self.load_event_info()
+            self.close_window = False
+            # clear the previous fig object
+            if hasattr(self, 'canvas_container'):
+                plt.close()
+                self.canvas_container.destroy()
+                self.canvas_button.destroy()
+                self.canvas_label.destroy()
+            # plot the next data file
+            self.plot_figure()
+        else:
+            # quit button
+            self._quit()
     
     # plot seismic phases for the previous data self.file
     def plot_last_data(self):
@@ -373,7 +406,6 @@ class Phaseviewer:
         else:
             self.drop_data_flag = 0
             self.drop_data_value.config(text='no ')
-
     # quit button
     def _quit(self):
         result = messagebox.askyesnocancel("Confirmation", "Do you sure to exit?")
@@ -382,7 +414,7 @@ class Phaseviewer:
             print('Save data and close the window...')
             self.master.quit()
             self.master.destroy()
-        elif result is False:
+        elif (result is False) or (result is None):
             print("Cancel to exit.")
 
 
