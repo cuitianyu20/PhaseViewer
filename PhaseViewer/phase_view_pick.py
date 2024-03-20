@@ -38,7 +38,10 @@ class Phaseviewer:
         # self.file folder path
         self.data_folder_path = datafolder
         if correct_current_data:
-            self.data_files = pd.read_csv(event_info)['event_wave'].tolist()
+            try:
+                self.data_files = pd.read_csv(event_info)['event_wave'].tolist()
+            except:
+                raise ValueError('Please load the correct event info file!!!')
         else:
             if folder_order == 1:
                 self.data_files = glob.glob(self.data_folder_path + "/*.sac")
