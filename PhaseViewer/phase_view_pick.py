@@ -1,3 +1,4 @@
+import os
 import glob 
 import obspy
 import pandas as pd
@@ -13,7 +14,7 @@ GUI for seismic phase view and pick-up
 class Phaseviewer:
     # initialize
     def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_corner=4, zerophase=False, filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
-                 filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, skip_load_event=False, sort_by_dis=True, correct_current_data=False, 
+                 filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, skip_load_event=False, sort_by_dis=True, correct_current_data=False, cross_win=[-8,8], view_win=[-8,8],
                  output_file='event_info.csv'):
         print("==========================================================================")
         print("===================  Welcome to Seismic Phase Viewer!  ===================")
@@ -23,11 +24,11 @@ class Phaseviewer:
         print("===================  3. Leave and save result: click 'Quit' button =======")
         print("==========================================================================")
         master = tk.Tk()
-        master.geometry("850x830")
+        master.geometry("930x930")
         if event_info is not None:
             # load event info
             self.event_info_file = 1
-            self.event_info = pd.read_csv(event_info,usecols=range(19)).values.tolist()
+            self.event_info = pd.read_csv(event_info,usecols=range(15)).values.tolist()
         else:
             self.event_info_file = 0
             self.event_info = []
@@ -39,7 +40,7 @@ class Phaseviewer:
         self.data_folder_path = datafolder
         if correct_current_data:
             try:
-                self.data_files = pd.read_csv(event_info,usecols=range(19))['event_wave'].tolist()
+                self.data_files = pd.read_csv(event_info,usecols=range(15))['event_wave'].tolist()
             except:
                 raise ValueError('Please load the correct event info file!!!')
         else:
@@ -54,14 +55,25 @@ class Phaseviewer:
                 for event in event_list:
                     event_files = sorted(glob.glob(self.data_folder_path + "/" + event + "/*.sac"))
                     if sort_by_dis:
-                        dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in event_files ]
+                        dis_list = []
+                        for data in event_files:
+                            try:
+                                st_data = obspy.read(data)
+                                dis_list.append(st_data[0].stats.sac.gcarc)
+                            except:
+                                print('Error load and remove: %s' % data)
+                                os.system("rm " + data)
+                                continue
+                        # dis_list = [obspy.read(data)[0].stats.sac.gcarc for data in event_files ]
                         event_files = [x for _,x in sorted(zip(dis_list,event_files))]
                     self.data_files += event_files
             else:
                 raise ValueError('Folder order error!!!')
         if len(self.data_files) == 0:
             raise ValueError('No sac file in the folder!!!')
-
+        # time window
+        self.cross_win = cross_win
+        self.view_win = view_win
         # filter data
         self.filter = filter
         self.filter_freq = filter_freq
@@ -118,8 +130,8 @@ class Phaseviewer:
         try:
             self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
                                                                                       zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
-                                                                                      filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, 
-                                                                                      filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
+                                                                                      filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, cross_win=self.cross_win, 
+                                                                                      view_win=self.view_win, filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
             self.wave_data_fig = True
             # predicted phase arrival
             self.PcP_predic_pick = self.travel_times['PcP']
@@ -153,10 +165,10 @@ class Phaseviewer:
                 self.P_pick = 0
                 self.PcP_pick = 0
                 self.PKiKP_pick = 0
-        except:
+        except ValueError as e:
             self.wave_data_fig = False
-            self.fig = plt.figure(figsize=(8.5, 7))
-            print('Error: load error (%s)' % self.data_files[self.index])
+            self.fig = plt.figure(figsize=(10, 8))
+            print('Error: load error (%s:%s)' % (self.data_files[self.index], e))
 
         self.embed_fig_in_tkinter(self.fig)
         self.canvas.draw()
@@ -405,9 +417,9 @@ class Phaseviewer:
             data_info = [self.data_files[self.index], self.P_classify, self.PcP_classify, self.PKiKP_classify, self.P_predic_pick, self.PcP_predic_pick, 
                          self.PKiKP_predic_pick, self.P_predic_pick+self.P_pick_tmp+self.P_pick, self.PcP_predic_pick+self.PcP_pick_tmp+self.PcP_pick, 
                          self.PKiKP_predic_pick+self.PKiKP_pick_tmp+self.PKiKP_pick, self.PcP_predic_pick+self.PcP_cc_lag, self.PKiKP_predic_pick+self.PKiKP_cc_lag, 
-                         self.PcP_cc_max, self.PKiKP_cc_max, self.PcP_wave, self.PKiKP_wave, self.PcP_cc_wave, self.PKiKP_cc_wave, self.drop_data_flag]
+                         self.PcP_cc_max, self.PKiKP_cc_max, self.drop_data_flag]
         else:
-            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+            data_info = [self.data_files[self.index], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         return data_info
 
     # save event info to csv file
@@ -419,8 +431,7 @@ class Phaseviewer:
         # save event info to csv file
         print('Save event info to csv file (event_info.csv)...')
         event_data = pd.DataFrame(self.event_info, columns=['event_wave', 'P_classify', 'PcP_classify', 'PKiKP_classify', 'P_predic_pick', 'PcP_predic_pick', 'PKiKP_predic_pick', 
-                                                            'P_manual_pick', 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pick', 'PKiKP_cc_pick', 'PcP_cc_max', 
-                                                            'PKiKP_cc_max', 'PcP_wave', 'PKiKP_wave', 'PcP_cc_wave', 'PKiKP_cc_wave', 'drop_data_flag'])
+                                                            'P_manual_pick', 'PcP_manual_pick', 'PKiKP_manual_pick', 'PcP_cc_pick', 'PKiKP_cc_pick', 'PcP_cc_max', 'PKiKP_cc_max', 'drop_data_flag'])
         event_data.to_csv(self.output_file, index=False)
         print('Saving...... Done!')
 
