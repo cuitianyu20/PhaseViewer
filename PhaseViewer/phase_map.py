@@ -31,7 +31,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         # cross correlation between P and PcP or PKiKP
         cross_corr = {}
         if P_wave_yes == 1:
-            for phase in phase_name_tmp[1:]:    
+            for phase in phase_name_tmp[1:]:
                 cross_corr[phase] = {}
                 if phase == 'PcP':
                     cross_corr[phase]['corr_wave'] = correlate_template(phase_wave_info['cross_cut'][phase], phase_wave_info['cross_cut']['P'], mode='full', normalize='naive')
@@ -60,21 +60,21 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         amp_percent_info = {}
         for phase in phase_name_tmp:
             try:
-                mean_info[phase] = np.abs(np.mean(phase_wave_info['view_cut'][phase]))
+                mean_info[phase] = round(np.abs(np.mean(phase_wave_info['view_cut'][phase])), 2)
             except:
                 mean_info[phase] = 'nan'
             # calculate SNR
             try:
                 noise_power = np.sum(phase_wave_info['lta_cut'][phase]**2)
                 signal_power = np.sum(phase_wave_info['sta_cut'][phase]**2)
-                SNR_info[phase] = 10 * np.log10(signal_power / noise_power)
+                SNR_info[phase] = round(10 * np.log10(signal_power / noise_power), 2)
                 # SNR_info[phase] = np.max(np.abs(phase_wave_info['sta_cut'][phase]))/np.max(np.abs(phase_wave_info['lta_cut'][phase]))
             except:
                 SNR_info[phase] = 'nan'
             try:
                 mag_phase = np.max(phase_wave_info['view_cut'][phase]) - np.min(phase_wave_info['view_cut'][phase])
                 mag_total = np.max(st_data[0].data) - np.min(st_data[0].data)
-                amp_percent_info[phase] = round(mag_phase/mag_total, 4)
+                amp_percent_info[phase] = round(100*mag_phase/mag_total, 2)
             except:
                 amp_percent_info[phase] = 'nan'
         # cross correlation between P and PcP or PKiKP
@@ -95,17 +95,20 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
         return  wave_cut_times, phase_wave_info, mean_info, SNR_info, amp_percent_info, cross_corr
     # plot wave cut
     def ax_plot_wave_cut(ax,wave_cut_times,phase_wave_info, phase_special_name, phase_special_color, mean_info, SNR_info, lta_win, sta_win, view_win, samplate, text_loc):
+        def judge_len_x_y(x, y):
+            min_len = min(len(x), len(y))
+            return x[:min_len], y[:min_len]
+        wave_cut_times['sta_cut'], phase_wave_info['sta_cut'][phase_special_name] = judge_len_x_y(wave_cut_times['sta_cut'], phase_wave_info['sta_cut'][phase_special_name])
+        wave_cut_times['lta_cut'], phase_wave_info['lta_cut'][phase_special_name] = judge_len_x_y(wave_cut_times['lta_cut'], phase_wave_info['lta_cut'][phase_special_name])
+        wave_cut_times['view_cut'], phase_wave_info['view_cut'][phase_special_name] = judge_len_x_y(wave_cut_times['view_cut'], phase_wave_info['view_cut'][phase_special_name])
         ax.plot(wave_cut_times['lta_cut'], phase_wave_info['lta_cut'][phase_special_name], color='silver')
         ax.plot(wave_cut_times['sta_cut'], phase_wave_info['sta_cut'][phase_special_name], color=phase_special_color)
         ax.plot(wave_cut_times['view_cut'][int((sta_win[1]-view_win[0])*samplate):], phase_wave_info['view_cut'][phase_special_name][int((sta_win[1]-view_win[0])*samplate):], color='k')
         if np.abs(lta_win[0]) < np.abs(view_win[0]):
             ax.plot(wave_cut_times['view_cut'][:int((lta_win[0]-view_win[0])*samplate)], phase_wave_info['view_cut'][phase_special_name][:int((lta_win[0]-view_win[0])*samplate)], color='k')
         ylim_range = ax.get_ylim()[1] - ax.get_ylim()[0]
-        ax.text(view_win[0],ax.get_ylim()[0]+text_loc[0] * ylim_range,'MEAN:%.2f'%mean_info[phase_special_name], color=phase_special_color)
-        ax.text(view_win[0],ax.get_ylim()[0]+text_loc[1] * ylim_range,'SNR:%.2f'%SNR_info[phase_special_name], color=phase_special_color)
-
-        # ax.text(view_win[0],ax.get_ylim()[0]*text_loc[0],'MEAN:%.2f'%mean_info[phase_special_name], color=phase_special_color)
-        # ax.text(view_win[0],ax.get_ylim()[1]*text_loc[1],'SNR:%.2f'%SNR_info[phase_special_name], color=phase_special_color)
+        ax.text(view_win[0],ax.get_ylim()[0]+text_loc[0] * ylim_range,'MEAN:%s'%mean_info[phase_special_name], color=phase_special_color)
+        ax.text(view_win[0],ax.get_ylim()[0]+text_loc[1] * ylim_range,'SNR:%s'%SNR_info[phase_special_name], color=phase_special_color)
         ax.fill_between([lta_win[0],lta_win[1]],ax.get_ylim()[0],ax.get_ylim()[1],facecolor='lightgrey', alpha=0.3)
         ax.set_xlim(view_win)
         ax.set_xlabel('Time (s)')
@@ -195,7 +198,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
             ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors='green', linestyles='dashed', label=phase) 
         else:
             ylim_range = ax.get_ylim()[1] - ax.get_ylim()[0]
-            ax.text(wave_view_win[0], ax.get_ylim()[0]+ylim_range*text_loc[i-1], '%s_Pct:%.2f'%(phase, amp_percent_info[phase]), color='r')
+            ax.text(wave_view_win[0], ax.get_ylim()[0]+ylim_range*text_loc[i-1], '%s_Pct:%s%%'%(phase, amp_percent_info[phase]), color='r')
             ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors=phase_color[i-1], linestyles='dashed', label=phase)
     ax.set_xlim(wave_view_win)
     ax.set_xlabel('Time (s)')

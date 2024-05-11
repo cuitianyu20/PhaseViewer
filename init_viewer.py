@@ -10,6 +10,10 @@ folder_order = 2 # 1: first-order folder; 2: second-order folder
 ### sort event by epicentral distance ###
 sort_by_distance = True # True: sort by distance; False: no sort
 
+### time window ###
+cross_win = [-8, 8]
+view_win = [-8, 8]
+
 ### filter data ###
 filter_data = True # True: filter data; False: no filter
 filter_freq = [1, 3] # filter frequency range (Hz), default: [1, 3] and corners=4
@@ -37,4 +41,4 @@ output_file = "event_info_test.csv" # output file name
 PhaseViewer.Phaseviewer(event_folder, folder_order=folder_order, filter=filter_data, filter_corner=filter_corner, zerophase=zerophase,
                         filter_freq=filter_freq, filter_freq_perturb=filter_freq_perturb, filter_freq_min=filter_freq_min, filter_freq_max=filter_freq_max, 
                         filter_freq_interval=filter_freq_interval, filter_freq_band_min=filter_freq_band_min, event_info=event_info, skip_load_event=skip_load_event, 
-                        sort_by_dis=sort_by_distance, correct_current_data=correct_current_data, output_file=output_file)
+                        sort_by_dis=sort_by_distance, correct_current_data=correct_current_data, output_file=output_file, cross_win=cross_win, view_win=view_win)
