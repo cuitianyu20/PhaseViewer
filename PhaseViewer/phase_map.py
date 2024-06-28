@@ -18,7 +18,7 @@ from .utils import predicted_phase_arrival, phase_wave_cut
 waveform view and phase pick
 '''
 def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3], filter_corner=4, zerophase=False, phase_name=["P","PcP","PKiKP"], wave_view_win=[0,1200], view_win=[-8,8], sta_win=[-10, 10], lta_win=[-30, -10], 
-              cross_win=[-8, 8], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5, correct_flag=False, correct_pick=None):
+              cross_win=[-8, 8], filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, filter_freq_interval=0.1, filter_freq_band_min=0.5, correct_flag=False, correct_pick=None, return_cc=False):
     # filters test
     def cal_cc_filter(st_tmp, phase_name_tmp, P_wave_yes, arrival_time_tmp, filter_freq, samplate):
         st_tmp.filter('bandpass', freqmin=filter_freq[0], freqmax=filter_freq[1], corners=filter_corner, zerophase=zerophase)
@@ -147,7 +147,7 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
     event_depth = st_ori[0].stats.sac.evdp
     epi_distance = st_ori[0].stats.sac.gcarc
     samplate = st_ori[0].stats.sampling_rate
-    arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)    
+    arrival_time_data = predicted_phase_arrival(event_depth=event_depth, distance=epi_distance, phase_list=phase_name, ref_model=ref_model)
     arrival_time_data_ori = arrival_time_data.copy()
     P_wave_yes = [1 if 'P' in arrival_time_data.keys() else 0][0]
     if P_wave_yes == 0:
@@ -184,118 +184,121 @@ def phase_fig(data_wave, ref_model="ak135", filter_data=False, filter_freq=[1, 3
             cmap_cut = mcolors.LinearSegmentedColormap.from_list("new_cmap", cmap(np.linspace(0.1, 0.8, 256)))
             sm = ScalarMappable(norm=norm, cmap=cmap_cut)
             sm_cmap_list.append(sm)
-    # figure plot
-    text_loc = [0.1, 0.7]
-    fig = plt.figure(figsize=(10, 8))
-    row_num = 6
-    column_num = 2
-    arrival_line_width = 1.5
-    # row 1: total data
-    ax = plt.subplot(row_num, 1, 1)
-    ax.plot(st[0].times(), st[0].data, 'k')
-    for i,phase in enumerate(phase_name):
-        if phase == 'P':
-            ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors='green', linestyles='dashed', label=phase) 
-        else:
-            ylim_range = ax.get_ylim()[1] - ax.get_ylim()[0]
-            ax.text(wave_view_win[0], ax.get_ylim()[0]+ylim_range*text_loc[i-1], '%s_Pct:%s%%'%(phase, amp_percent_info[phase]), color='r')
-            ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors=phase_color[i-1], linestyles='dashed', label=phase)
-    ax.set_xlim(wave_view_win)
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Amp')
-    ax.legend(loc='upper right', fontsize=8)
-    if P_wave_yes == 1:
-        ax.set_title('Event(%s):'%str(st[0].stats.starttime)+' '+st[0].stats.network+'.'+st[0].stats.station+'.'+st[0].stats.channel+' with P arrival')
+    if return_cc == True:
+        return arrival_time_data_ori, phase_wave_info, cross_corr
     else:
-        ax.set_title('Event(%s):'%str(st[0].stats.starttime)+' '+st[0].stats.network+'.'+st[0].stats.station+'.'+st[0].stats.channel+' without P arrival')
-    # row 2: P phase
-    for j in range(column_num):
-        # raw data
-        if j == 0:
-            ax = plt.subplot(row_num, column_num, j+3)
-            if P_wave_yes == 1:
-                ax_plot_wave_cut(ax,wave_cut_times_ori,phase_wave_info_ori, 'P', 'green',  mean_info_ori, SNR_info_ori, lta_win, sta_win, view_win, samplate, text_loc)
-            ax.set_title('Phase: P (raw)')
-        # filtered data
-        elif j == 1:
-            ax = plt.subplot(row_num, column_num, j+3)
-            if P_wave_yes == 1:
-                ax_plot_wave_cut(ax,wave_cut_times,phase_wave_info, 'P', 'green', mean_info, SNR_info, lta_win, sta_win, view_win, samplate, text_loc)
-            if filter_data == True:
-                ax.set_title('Phase: P (filter: %s-%s Hz)'%(filter_freq[0], filter_freq[1]))
+        # figure plot
+        text_loc = [0.1, 0.7]
+        fig = plt.figure(figsize=(10, 8))
+        row_num = 6
+        column_num = 2
+        arrival_line_width = 1.5
+        # row 1: total data
+        ax = plt.subplot(row_num, 1, 1)
+        ax.plot(st[0].times(), st[0].data, 'k')
+        for i,phase in enumerate(phase_name):
+            if phase == 'P':
+                ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors='green', linestyles='dashed', label=phase) 
             else:
-                ax.set_title('Phase: P (raw)')
-    # row 3: PcP, row 4: PKiKP phases, row 5: cross correlation with P phase
-    if P_wave_yes == 1:
-        phase_name = phase_name[1:]
-    else:
-        phase_name = phase_name
-    row_ini = 5
-    for i,phase in enumerate(phase_name):
-        for j in range(column_num):
-            ax = plt.subplot(row_num, column_num, i+row_ini+j)
-            if j == 0:
-                ax_plot_wave_cut(ax,wave_cut_times_ori,phase_wave_info_ori, phase, phase_raw_color[i], mean_info_ori, SNR_info_ori, lta_win, sta_win, view_win, samplate, text_loc)
-                if P_wave_yes == 1:
-                    ax.vlines(cross_corr_ori[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
-                ax.set_title('Phase: %s (raw)' % phase)
-            elif j == 1:
-                ax_plot_wave_cut(ax,wave_cut_times,phase_wave_info, phase, phase_color[i], mean_info, SNR_info, lta_win, sta_win, view_win, samplate, text_loc)
-                if P_wave_yes == 1:
-                    min_ylim = ax.get_ylim()[0]
-                    max_ylim = ax.get_ylim()[1]
-                    ax.vlines(cross_corr[phase]['lag_max'], min_ylim, max_ylim, colors=phase_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
-                    ax.vlines(cross_corr_ori[phase]['lag_max'], min_ylim, max_ylim, colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width-0.5, zorder=0)
-                    # fill predicted arrival time density
-                    if filter_data == True:
-                        for k in range(len(phase_bins_list[i])-1):
-                            ax.fill_between([phase_bins_list[i][k],phase_bins_list[i][k+1]],min_ylim,max_ylim,facecolor=sm_cmap_list[i].to_rgba(phase_density_list[i][k]), alpha=0.4, zorder=0)
-                if filter_data == True:
-                    ax.set_title('Phase: %s (filter: %s-%s Hz)'%(phase, filter_freq[0], filter_freq[1]))
-                else:
-                    ax.set_title('Phase: %s (raw)' % phase)
-        row_ini += 1
-    row_ini = 9
-    for i,phase in enumerate(phase_name):
-        ax = plt.subplot(row_num, column_num, i+row_ini)
-        if P_wave_yes == 1:
-            ax.plot(cross_corr[phase]['corr_lag'], cross_corr[phase]['corr_wave'], color='k')
-            ax.vlines(cross_corr[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_color[i], linestyles='dashed',linewidths=arrival_line_width)
-            ax.text(np.min(cross_corr[phase]['corr_lag']), -0.7, 'lag:%.2f s'%cross_corr[phase]['lag_max'], color=phase_color[i])
-            ax.text(np.min(cross_corr[phase]['corr_lag']), 0.6, 'corr:%.2f'%cross_corr[phase]['corr_max'], color=phase_color[i])
-            # ax.set_xlim(-1*math.ceil(np.abs(np.min(cross_corr[phase]['corr_lag']))/10)*10, math.ceil(np.max(cross_corr[phase]['corr_lag'])/10)*10)
-            ax.set_xlim(cross_win[0]*2, cross_win[1]*2)
-            ax.set_ylim(-1.1, 1.1)
-        ax.set_xlabel('Lag time (s)')
-        ax.set_ylabel('Corr')
-        if phase == 'PcP':
-            ax.set_title('Cross-correlation (filtered %s-P)'%phase)
-        elif phase == 'PKiKP':
-            ax.set_title('Cross-correlation (filtered %s-PcP)'%phase)
-    # row 6: PcP-P and PcP-PKiKP waveforms comparison
-    def norm_wave(wave):
-        wave_range = np.max(wave) - np.min(wave)
-        return wave*2/wave_range
-    row_ini = 11
-    for j in range(column_num):
-        ax = plt.subplot(row_num, column_num, row_ini+j)
-        if j == 0 and P_wave_yes == 1:
-            ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['P']), color='green')
-            ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
-            ax.set_title("PcP-P waveform comparison")
-        elif j == 0 and P_wave_yes == 0:
-            ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
-            ax.set_title("PcP waveform and no P waveform")
-        elif j == 1:
-            ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
-            ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PKiKP']), color=phase_color[1])
-            ax.set_title("PcP-PKiKP waveform comparison")
-        ax.set_xlim(view_win)
+                ylim_range = ax.get_ylim()[1] - ax.get_ylim()[0]
+                ax.text(wave_view_win[0], ax.get_ylim()[0]+ylim_range*text_loc[i-1], '%s_Pct:%s%%'%(phase, amp_percent_info[phase]), color='r')
+                ax.vlines(arrival_time_data[phase], np.min(st[0].data), np.max(st[0].data), colors=phase_color[i-1], linestyles='dashed', label=phase)
+        ax.set_xlim(wave_view_win)
         ax.set_xlabel('Time (s)')
         ax.set_ylabel('Amp')
-    # plt.subplots_adjust(hspace=0.5, wspace=0.5)     
-    plt.tight_layout()
-    # plt.show()
-    # plt.savefig('phase_fig_%s_%s.png'%(filter_freq[0], filter_freq[1]))
-    return fig, arrival_time_data_ori, phase_wave_info, cross_corr
+        ax.legend(loc='upper right', fontsize=8)
+        if P_wave_yes == 1:
+            ax.set_title('Event(%s):'%str(st[0].stats.starttime)+' '+st[0].stats.network+'.'+st[0].stats.station+'.'+st[0].stats.channel+' with P arrival')
+        else:
+            ax.set_title('Event(%s):'%str(st[0].stats.starttime)+' '+st[0].stats.network+'.'+st[0].stats.station+'.'+st[0].stats.channel+' without P arrival')
+        # row 2: P phase
+        for j in range(column_num):
+            # raw data
+            if j == 0:
+                ax = plt.subplot(row_num, column_num, j+3)
+                if P_wave_yes == 1:
+                    ax_plot_wave_cut(ax,wave_cut_times_ori,phase_wave_info_ori, 'P', 'green',  mean_info_ori, SNR_info_ori, lta_win, sta_win, view_win, samplate, text_loc)
+                ax.set_title('Phase: P (raw)')
+            # filtered data
+            elif j == 1:
+                ax = plt.subplot(row_num, column_num, j+3)
+                if P_wave_yes == 1:
+                    ax_plot_wave_cut(ax,wave_cut_times,phase_wave_info, 'P', 'green', mean_info, SNR_info, lta_win, sta_win, view_win, samplate, text_loc)
+                if filter_data == True:
+                    ax.set_title('Phase: P (filter: %s-%s Hz)'%(filter_freq[0], filter_freq[1]))
+                else:
+                    ax.set_title('Phase: P (raw)')
+        # row 3: PcP, row 4: PKiKP phases, row 5: cross correlation with P phase
+        if P_wave_yes == 1:
+            phase_name = phase_name[1:]
+        else:
+            phase_name = phase_name
+        row_ini = 5
+        for i,phase in enumerate(phase_name):
+            for j in range(column_num):
+                ax = plt.subplot(row_num, column_num, i+row_ini+j)
+                if j == 0:
+                    ax_plot_wave_cut(ax,wave_cut_times_ori,phase_wave_info_ori, phase, phase_raw_color[i], mean_info_ori, SNR_info_ori, lta_win, sta_win, view_win, samplate, text_loc)
+                    if P_wave_yes == 1:
+                        ax.vlines(cross_corr_ori[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
+                    ax.set_title('Phase: %s (raw)' % phase)
+                elif j == 1:
+                    ax_plot_wave_cut(ax,wave_cut_times,phase_wave_info, phase, phase_color[i], mean_info, SNR_info, lta_win, sta_win, view_win, samplate, text_loc)
+                    if P_wave_yes == 1:
+                        min_ylim = ax.get_ylim()[0]
+                        max_ylim = ax.get_ylim()[1]
+                        ax.vlines(cross_corr[phase]['lag_max'], min_ylim, max_ylim, colors=phase_color[i], linestyles='dashed',linewidths=arrival_line_width, zorder=0)
+                        ax.vlines(cross_corr_ori[phase]['lag_max'], min_ylim, max_ylim, colors=phase_raw_color[i], linestyles='dashed',linewidths=arrival_line_width-0.5, zorder=0)
+                        # fill predicted arrival time density
+                        if filter_data == True:
+                            for k in range(len(phase_bins_list[i])-1):
+                                ax.fill_between([phase_bins_list[i][k],phase_bins_list[i][k+1]],min_ylim,max_ylim,facecolor=sm_cmap_list[i].to_rgba(phase_density_list[i][k]), alpha=0.4, zorder=0)
+                    if filter_data == True:
+                        ax.set_title('Phase: %s (filter: %s-%s Hz)'%(phase, filter_freq[0], filter_freq[1]))
+                    else:
+                        ax.set_title('Phase: %s (raw)' % phase)
+            row_ini += 1
+        row_ini = 9
+        for i,phase in enumerate(phase_name):
+            ax = plt.subplot(row_num, column_num, i+row_ini)
+            if P_wave_yes == 1:
+                ax.plot(cross_corr[phase]['corr_lag'], cross_corr[phase]['corr_wave'], color='k')
+                ax.vlines(cross_corr[phase]['lag_max'], ax.get_ylim()[0], ax.get_ylim()[1], colors=phase_color[i], linestyles='dashed',linewidths=arrival_line_width)
+                ax.text(np.min(cross_corr[phase]['corr_lag']), -0.7, 'lag:%.2f s'%cross_corr[phase]['lag_max'], color=phase_color[i])
+                ax.text(np.min(cross_corr[phase]['corr_lag']), 0.6, 'corr:%.2f'%cross_corr[phase]['corr_max'], color=phase_color[i])
+                # ax.set_xlim(-1*math.ceil(np.abs(np.min(cross_corr[phase]['corr_lag']))/10)*10, math.ceil(np.max(cross_corr[phase]['corr_lag'])/10)*10)
+                ax.set_xlim(cross_win[0]*2, cross_win[1]*2)
+                ax.set_ylim(-1.1, 1.1)
+            ax.set_xlabel('Lag time (s)')
+            ax.set_ylabel('Corr')
+            if phase == 'PcP':
+                ax.set_title('Cross-correlation (filtered %s-P)'%phase)
+            elif phase == 'PKiKP':
+                ax.set_title('Cross-correlation (filtered %s-PcP)'%phase)
+        # row 6: PcP-P and PcP-PKiKP waveforms comparison
+        def norm_wave(wave):
+            wave_range = np.max(wave) - np.min(wave)
+            return wave*2/wave_range
+        row_ini = 11
+        for j in range(column_num):
+            ax = plt.subplot(row_num, column_num, row_ini+j)
+            if j == 0 and P_wave_yes == 1:
+                ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['P']), color='green')
+                ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
+                ax.set_title("PcP-P waveform comparison")
+            elif j == 0 and P_wave_yes == 0:
+                ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
+                ax.set_title("PcP waveform and no P waveform")
+            elif j == 1:
+                ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PcP']), color=phase_color[0])
+                ax.plot(wave_cut_times['view_cut'], norm_wave(phase_wave_info['view_cut']['PKiKP']), color=phase_color[1])
+                ax.set_title("PcP-PKiKP waveform comparison")
+            ax.set_xlim(view_win)
+            ax.set_xlabel('Time (s)')
+            ax.set_ylabel('Amp')
+        # plt.subplots_adjust(hspace=0.5, wspace=0.5)     
+        plt.tight_layout()
+        # plt.show()
+        # plt.savefig('phase_fig_%s_%s.png'%(filter_freq[0], filter_freq[1]))
+        return fig, arrival_time_data_ori, phase_wave_info, cross_corr
 

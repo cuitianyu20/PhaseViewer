@@ -131,10 +131,18 @@ class Phaseviewer:
     def plot_figure(self, correct_flag=False, correct_pick=[0, 0, 0], cc_cal=False):
         file_path = self.data_files[self.index]        
         try:
-            self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
-                                                                                      zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
-                                                                                      filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, cross_win=self.cross_win, 
-                                                                                      view_win=self.view_win, filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
+            if cc_cal == False:
+                self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
+                                                                                        zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
+                                                                                        filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, cross_win=self.cross_win, 
+                                                                                        view_win=self.view_win, filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick,
+                                                                                        return_cc=cc_cal)
+            else:
+                self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
+                                                                                zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
+                                                                                filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, cross_win=self.cross_win, 
+                                                                                view_win=self.view_win, filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick,
+                                                                                return_cc=cc_cal)
             self.wave_data_fig = True
             # if cross correlation value is less than cc_min
             self.cc_min_flag = False
@@ -144,8 +152,9 @@ class Phaseviewer:
             # phase wave cut
             self.PcP_wave = self.phase_wave['view_cut']['PcP']
             self.PKiKP_wave = self.phase_wave['view_cut']['PKiKP']
-            if 'P' not in self.travel_times.keys():
-                print('%s : no P arrival.' % self.data_files[self.index])
+            if ('P' not in self.travel_times.keys()):
+                if cc_cal == False:
+                    print('%s : no P arrival.' % self.data_files[self.index])
                 # phase cross correlation
                 self.P_predic_pick = 0
                 self.PcP_cc_wave = 0 
@@ -269,12 +278,14 @@ class Phaseviewer:
         self.index -= 1
         last_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
         # last_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+        self.plot_figure(cc_cal=True)
         self.reset_view()
         self.load_event_info()
         while current_event_time == last_event_time:
             self.index -= 1
             last_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
             # last_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+            self.plot_figure(cc_cal=True)
             self.reset_view()
             self.load_event_info()
         if first_data:
@@ -319,6 +330,7 @@ class Phaseviewer:
                 next_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
                 # next_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
                 # update event info, reset and load event info
+                self.plot_figure(cc_cal=True)
                 self.reset_view()
                 self.load_event_info()
                 self.update_event_info()
@@ -426,7 +438,7 @@ class Phaseviewer:
             self.reset_view()
             self.load_event_info()
             while self.cc_min_flag == False:
-                self.update_event_info()
+                self.update_event_info() 
                 self.index += 1
                 self.plot_figure(cc_cal=True)
                 self.reset_view()

@@ -28,6 +28,9 @@ filter_freq_max = 5.0           # max frequency corner (Hz)
 filter_freq_interval = 0.1      # frequency interval (Hz)
 filter_freq_band_min = 0.5      # min frequency band (Hz) 
 
+### minimum cc value ###
+cc_min = 0.4                    # minimum cc value
+
 ### load selected event information ###
 # event_info = None   # if load selected event information, set event_info = "event_info.csv"
 event_info = "event_info.csv"
@@ -41,4 +44,4 @@ output_file = "event_info_test.csv" # output file name
 PhaseViewer.Phaseviewer(event_folder, folder_order=folder_order, filter=filter_data, filter_corner=filter_corner, zerophase=zerophase,
                         filter_freq=filter_freq, filter_freq_perturb=filter_freq_perturb, filter_freq_min=filter_freq_min, filter_freq_max=filter_freq_max, 
                         filter_freq_interval=filter_freq_interval, filter_freq_band_min=filter_freq_band_min, event_info=event_info, skip_load_event=skip_load_event, 
-                        sort_by_dis=sort_by_distance, correct_current_data=correct_current_data, output_file=output_file, cross_win=cross_win, view_win=view_win)
+                        sort_by_dis=sort_by_distance, cc_min=cc_min, correct_current_data=correct_current_data, output_file=output_file, cross_win=cross_win, view_win=view_win)
