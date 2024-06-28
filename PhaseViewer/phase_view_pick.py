@@ -15,7 +15,7 @@ class Phaseviewer:
     # initialize
     def __init__(self, datafolder, folder_order=1, filter=False, filter_freq=[1, 3], filter_corner=4, zerophase=False, filter_freq_perturb=0.3, filter_freq_min=0.5, filter_freq_max=5.0, 
                  filter_freq_interval=0.05, filter_freq_band_min=0.5, event_info=None, skip_load_event=False, sort_by_dis=True, correct_current_data=False, cross_win=[-8,8], view_win=[-8,8],
-                 output_file='event_info.csv'):
+                 cc_min=0.4, output_file='event_info.csv'):
         print("==========================================================================")
         print("===================  Welcome to Seismic Phase Viewer!  ===================")
         print("===================  Usage:                            ===================")
@@ -86,6 +86,8 @@ class Phaseviewer:
         self.zerophase = zerophase
         # data index
         self.index = 0
+        # minimum cross correlation value
+        self.cc_min = cc_min
         # correct index
         self.correct_index = 0
         # output data name
@@ -125,14 +127,16 @@ class Phaseviewer:
         tk.mainloop()
 
     # plot seismic phases for the next data self.file
-    def plot_figure(self, correct_flag=False, correct_pick=[0, 0, 0]):
-        file_path = self.data_files[self.index]
+    def plot_figure(self, correct_flag=False, correct_pick=[0, 0, 0], cc_cal=False):
+        file_path = self.data_files[self.index]        
         try:
             self.fig, self.travel_times, self.phase_wave, self.cross_corr = phase_fig(data_wave=file_path, filter_data=self.filter, filter_freq=self.filter_freq, filter_corner=self.filter_corner, 
                                                                                       zerophase=self.zerophase, filter_freq_perturb=self.filter_freq_perturb, filter_freq_min=self.filter_freq_min, 
                                                                                       filter_freq_max=self.filter_freq_max, filter_freq_interval=self.filter_freq_interval, cross_win=self.cross_win, 
                                                                                       view_win=self.view_win, filter_freq_band_min=self.filter_freq_band_min,correct_flag=correct_flag,correct_pick=correct_pick)
             self.wave_data_fig = True
+            # if cross correlation value is less than cc_min
+            self.cc_min_flag = False
             # predicted phase arrival
             self.PcP_predic_pick = self.travel_times['PcP']
             self.PKiKP_predic_pick = self.travel_times['PKiKP']
@@ -149,6 +153,7 @@ class Phaseviewer:
                 self.PKiKP_cc_max = 0
                 self.PcP_cc_lag = 0
                 self.PKiKP_cc_lag = 0
+                self.cc_min_flag = True
             else:
                 self.P_predic_pick = self.travel_times['P']
                 # phase cross correlation
@@ -156,6 +161,10 @@ class Phaseviewer:
                 self.PKiKP_cc_wave = self.cross_corr['PKiKP']['corr_wave']
                 self.PcP_cc_max = self.cross_corr['PcP']['corr_max']
                 self.PKiKP_cc_max = self.cross_corr['PKiKP']['corr_max']
+                if self.PcP_cc_max > self.cc_min or self.PKiKP_cc_max > self.cc_min:
+                    self.cc_min_flag = True
+                else:
+                    self.cc_min_flag = False
                 self.PcP_cc_lag = self.cross_corr['PcP']['lag_max']
                 self.PKiKP_cc_lag = self.cross_corr['PKiKP']['lag_max']
             if self.correct_flag:
@@ -165,13 +174,15 @@ class Phaseviewer:
                 self.P_pick = 0
                 self.PcP_pick = 0
                 self.PKiKP_pick = 0
+                self.cc_min_flag = True
         except ValueError as e:
             self.wave_data_fig = False
             self.fig = plt.figure(figsize=(10, 8))
             print('Error: load error (%s:%s)' % (self.data_files[self.index], e))
+        if cc_cal == False:
+            self.embed_fig_in_tkinter(self.fig)
+            self.canvas.draw()
 
-        self.embed_fig_in_tkinter(self.fig)
-        self.canvas.draw()
 
     # embed Matplotlib figure into Tkinter window
     def embed_fig_in_tkinter(self, fig):
@@ -214,7 +225,7 @@ class Phaseviewer:
         P_pick_button = tk.Button(self.canvas_button, text="  P Pick  ", command=lambda: self.phase_pick(1))
         P_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # P value
-        self.P_pick_value = tk.Label(self.canvas_button, text='=%.3f s'%self.P_pick)
+        self.P_pick_value = tk.Label(self.canvas_button, text='=%.3f s'%self.P_pick if self.P_pick >=0 else '=%.3fs'%self.P_pick)
         self.P_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # reset button
         reset_button = tk.Button(self.canvas_label, text="Reset", command=self.reset_view)
@@ -235,15 +246,97 @@ class Phaseviewer:
         PcP_pick_button = tk.Button(self.canvas_label, text=" PcP Pick ", command=lambda: self.phase_pick(2))
         PcP_pick_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # PcP value
-        self.PcP_pick_value = tk.Label(self.canvas_label, text='=%.3f s'%self.PcP_pick)
+        self.PcP_pick_value = tk.Label(self.canvas_label, text='=%.3f s'%self.PcP_pick if self.PcP_pick >=0 else '=%.3fs'%self.PcP_pick)
         self.PcP_pick_value.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
         # pick-up PKiKP button
         PKiKP_class_button = tk.Button(self.canvas_label, text="PKiKP Pick", command=lambda: self.phase_pick(3))
         PKiKP_class_button.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=10, pady=10)
         # # PKiKP value
-        self.PKiKP_pick_value = tk.Label(self.canvas_label, text='s %.3f='%self.PKiKP_pick)
+        self.PKiKP_pick_value = tk.Label(self.canvas_label, text='s %.3f='%self.PKiKP_pick if self.PKiKP_pick >=0 else 's%.3f='%self.PKiKP_pick)
         self.PKiKP_pick_value.pack(side=tk.RIGHT, fill=tk.BOTH, anchor=tk.CENTER, padx=5, pady=5)
-    
+        # Last event button
+        last_event_button = tk.Button(self.canvas_button, text="Last Event", command=self.last_event)
+        last_event_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=17, pady=10)
+        # next event button
+        next_event_button = tk.Button(self.canvas_label, text="Next Event", command=self.next_event)
+        next_event_button.pack(side=tk.LEFT, fill=tk.BOTH, anchor=tk.CENTER, padx=17, pady=10)
+
+    # return index of the last event
+    def load_last_event(self, first_data=False):
+        current_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+        # current_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+        self.index -= 1
+        last_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+        # last_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+        self.reset_view()
+        self.load_event_info()
+        while current_event_time == last_event_time:
+            self.index -= 1
+            last_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+            # last_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+            self.reset_view()
+            self.load_event_info()
+        if first_data:
+            self.index += 1
+
+    # plot seismic phases for the previous data self.file
+    def last_event(self):
+        if self.index > 0:
+            self.load_last_event()
+            self.load_last_event(first_data=True)
+            # load event info if ever see this event
+            self.reset_view()
+            self.load_event_info()
+            self.close_window = False
+            # clear the previous fig object
+            if hasattr(self, 'canvas_container'):
+                plt.close()
+                self.canvas_container.destroy()
+                self.canvas_button.destroy()
+                self.canvas_label.destroy()
+            # plot the previous data file
+            self.plot_figure()
+        else:
+            print('Alert: this is the first event data!!!')
+
+    def next_event(self):
+        # update event info for last event
+        self.update_event_info()
+        if self.index < len(self.data_files)-1:
+            current_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+            # current_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+            self.index += 1
+            next_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+            # next_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+            # update event info, reset and load event info
+            self.reset_view()
+            self.load_event_info()
+            self.update_event_info()
+            # skip the same event
+            while current_event_time == next_event_time:
+                self.index += 1
+                next_event_time = self.data_files[self.index].split('/')[-1].split('.')[0]
+                # next_event_time = obspy.read(self.data_files[self.index])[0].stats.starttime.strftime("%Y-%m-%d-%H-%M-%S")
+                # update event info, reset and load event info
+                self.reset_view()
+                self.load_event_info()
+                self.update_event_info()
+            # load event info if ever see this event
+            self.reset_view()
+            self.load_event_info()
+            self.close_window = False
+            # clear the previous fig object
+            if hasattr(self, 'canvas_container'):
+                plt.close()
+                self.canvas_container.destroy()
+                self.canvas_button.destroy()
+                self.canvas_label.destroy()
+            # plot the next data file
+            self.plot_figure()
+        else:
+            # quit button
+            self._quit()
+
     # classify seismic phases
     def phases_classify(self, phase_num):
         if phase_num == 1:
@@ -268,6 +361,7 @@ class Phaseviewer:
             else:
                 self.PKiKP_classify = 1
                 self.PKiKP_classify_value.config(text='yes')
+    
     # phase pick-up
     def phase_pick(self, phase_num):
         if phase_num == 1:
@@ -326,6 +420,16 @@ class Phaseviewer:
         self.update_event_info()
         if self.index < len(self.data_files)-1:
             self.index += 1
+            # statisfy the minimum cross correlation value
+            self.plot_figure(cc_cal=True)
+            self.reset_view()
+            self.load_event_info()
+            while self.cc_min_flag == False:
+                self.update_event_info()
+                self.index += 1
+                self.plot_figure(cc_cal=True)
+                self.reset_view()
+                self.load_event_info()
             # load event info if ever see this event
             self.reset_view()
             self.load_event_info()
@@ -346,7 +450,15 @@ class Phaseviewer:
     def plot_last_data(self):
         if self.index > 0:
             self.index -= 1
+            self.plot_figure(cc_cal=True)
             # load event info if ever see this event
+            self.reset_view()
+            self.load_event_info()
+            while self.cc_min_flag == False and self.index > 0:
+                self.index -= 1
+                self.plot_figure(cc_cal=True)
+                self.reset_view()
+                self.load_event_info()
             self.reset_view()
             self.load_event_info()
             self.close_window = False
@@ -409,7 +521,7 @@ class Phaseviewer:
                 self.event_info[i] = data_info
                 duplicate_flag = 1
         if duplicate_flag == 0:
-            self.event_info.append(data_info)   
+            self.event_info.append(data_info)
 
     # get single wave data
     def single_wave_data(self):
@@ -443,6 +555,7 @@ class Phaseviewer:
         else:
             self.drop_data_flag = 0
             self.drop_data_value.config(text='no ')
+
     # quit button
     def _quit(self):
         result = messagebox.askyesnocancel("Confirmation", "Do you sure to exit?")
