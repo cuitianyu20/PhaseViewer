@@ -112,6 +112,7 @@ class Phaseviewer:
                     # skip to the record index
                     if self.skip_load_event:
                         self.index = len(self.event_info) - 1
+                        
                         print('Skip to the record index: %s' % self.event_info[-1][0])
                     # load event info
                     self.load_event_info()
@@ -430,9 +431,6 @@ class Phaseviewer:
                 self.plot_figure(cc_cal=True)
                 self.reset_view()
                 self.load_event_info()
-            # load event info if ever see this event
-            self.reset_view()
-            self.load_event_info()
             self.close_window = False
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
@@ -459,8 +457,6 @@ class Phaseviewer:
                 self.plot_figure(cc_cal=True)
                 self.reset_view()
                 self.load_event_info()
-            self.reset_view()
-            self.load_event_info()
             self.close_window = False
             # clear the previous fig object
             if hasattr(self, 'canvas_container'):
